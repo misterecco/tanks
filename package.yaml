@@ -27,6 +27,8 @@ dependencies:
 - data-default >= 0.7 && < 1
 - array
 - cereal
+- bytestring
+- binary
 
 library:
   source-dirs: src
