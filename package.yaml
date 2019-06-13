@@ -25,6 +25,8 @@ dependencies:
 - containers
 - vty >= 5.20 && < 6
 - data-default >= 0.7 && < 1
+- array
+- cereal
 
 library:
   source-dirs: src
