@@ -29,6 +29,10 @@ dependencies:
 - cereal
 - bytestring
 - binary
+- sdl2
+- sdl2-image
+- text
+- extra
 
 library:
   source-dirs: src

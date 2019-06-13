@@ -1,5 +1,10 @@
 # tanks
 
+## Dependecies
+You need to have the following libraries installed in your system:
+- sdl2
+- sdl2-image
+
 ## Troubleshooting
 BadValue (integer parameter out of range for operation)
 
@@ -8,6 +13,6 @@ https://askubuntu.com/questions/801440/login-loop-badvalue-integer-parameter-out
 
 ## Running
 ```
-stack build
+stack build tanks
 stack exec tanks-exe
 ```
