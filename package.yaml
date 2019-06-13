@@ -1,5 +1,5 @@
 name:                tanks
-version:             0.1.0.0
+version:             0.2.0.0
 github:              "githubuser/tanks"
 license:             BSD3
 author:              "Author name here"
@@ -21,6 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - GLUT >= 2.7 && < 3
+- network >= 2.8 && < 3
+- containers
+- vty >= 5.20 && < 6
+- data-default >= 0.7 && < 1
 
 library:
   source-dirs: src
@@ -35,6 +39,23 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - tanks
+
+  server-exe:
+    main:                Main.hs
+    source-dirs:         server
+    ghc-options:
+    - -threaded
+    dependencies:
+    - tanks
+
+  client-exe:
+    main:                Main.hs
+    source-dirs:         client
+    ghc-options:
+    - -threaded
+    dependencies:
+    - tanks
+
 
 tests:
   tanks-test:
