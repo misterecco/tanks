@@ -18,7 +18,7 @@ data Field =
     | Ice
     | Empty
     deriving (Generic, Show)
-    
+
 instance Binary Field
 
 type Board = Array (Int, Int) Field
@@ -31,13 +31,13 @@ y_coeff = 67
 
 randomField :: Int -> Int -> Field
 randomField i j =
-    case mod (xor (i * 1000 + j) 8475845) 5 of
+    case ((i * 1000 + j) `xor` 8475845) `mod` 5 of
         0 -> Bricks
         1 -> Forest
         2 -> Stone
         3 -> Ice
         _ -> Empty
-        
+
 
 getBoard :: Int -> Int -> Board
 getBoard n m = array ((0,0),(n-1,m-1)) (concat [ [ ((i, j), Empty) | j <- [0..n-1] ] | i <- [0..m-1]] )
