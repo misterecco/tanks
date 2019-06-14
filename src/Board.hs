@@ -19,9 +19,11 @@ data Field =
     | Empty
     deriving (Generic, Show)
     
-instance Binary Field
+instance Serialize Field
 
 type Board = Array (Int, Int) Field
+
+instance Serialize (Array (Int, Int) Field)
 
 x_coeff :: Int
 x_coeff = 17

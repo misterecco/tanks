@@ -1,13 +1,15 @@
 module Main where
 
 import Network.Socket
-import System.IO
+import System.IO as IO
 import Control.Exception
 import Control.Concurrent
 import Control.Monad (when)
 import Control.Monad.Fix (fix)
 import Data.IORef
 import Data.Map
+import Data.ByteString.Lazy as BS
+import Data.Binary
 import Board
 
 data GameAction =
@@ -32,7 +34,7 @@ readMoves chan moves = do
     case e of
         Move senderNum action -> do {
             modifyIORef moves (insert senderNum action);
-            putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ action
+            IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ action
         }
         _ -> return ()
     readMoves chan moves
@@ -72,10 +74,8 @@ runConn (sock, _) chan playerNum = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
-    hPutStrLn hdl "Welcome to the tanks game, what's your name?"
-    name <- fmap init (hGetLine hdl)
+    name <- IO.hGetLine hdl
     broadcast ("--> " ++ name ++ " entered the game.")
-    hPutStrLn hdl ("Welcome, " ++ name ++ "!")
 
     commLine <- dupChan chan
 
@@ -83,15 +83,15 @@ runConn (sock, _) chan playerNum = do
     reader <- forkIO $ fix $ \loop -> do
         e <- readChan commLine
         case e of
-            SendBoard board -> hPutStrLn hdl (show board)
+            SendBoard board -> BS.hPutStrLn hdl (encode board)
             _ -> return ()
         loop
 
     handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
-        line <- hGetLine hdl
+        line <- IO.hGetLine hdl
         case line of
              -- If an exception is caught, send a message and break the loop
-             "quit" -> hPutStrLn hdl "Bye!"
+             "quit" -> IO.hPutStrLn hdl "Bye!"
              -- else, continue looping.
              _      -> broadcast line >> loop
 
