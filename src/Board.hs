@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -12,38 +13,65 @@ import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Rep, Generic)
 
-data Field =
-      Bricks
-    | Forest
-    | Stone
-    | Ice
-    | Empty
-    deriving (Generic, Show)
 
-instance Binary Field
+type Position = (Int, Int)
+type Velocity = (Int, Int)
 
-data Dir =
-	  UP
-	| DOWN
-	| LEFT
-	| RIGHT
-	deriving (Generic, Show)
 
-instance Binary Dir
+-- Human and NPC tanks have different shapes
+data Player = Human | NPC
+  deriving (Binary, Generic, Show)
 
-type Bullet = (Dir, Int, Int)
+data Color = Yellow | Green | Silver
+  deriving (Binary, Generic, Show)
 
-data Tank = Tank (Int, Int) Dir [Bullet]
-	deriving (Generic, Show)
+data Size = Small | Medium | Large
+  deriving (Binary, Generic, Show)
 
-instance Binary Tank
+data TankBonus = Raft | Shield | Flashing
+  deriving (Binary, Generic, Show)
+
+data GeneralBonus = Bunker | Freeze
+  deriving (Binary, Generic, Show)
+
+data BonusItem = Helmet | Clock | Shovel | Star | Grenade | Life | Pistol | Boat
+  deriving (Binary, Generic, Show)
+
+data Field = Bricks | Forest | Stone | Ice | Empty
+  deriving (Binary, Generic, Show)
+
+data Dir = UP | DOWN | LEFT | RIGHT
+  deriving (Binary, Generic, Show)
+
+
+-- TODO: record ??
+type Bullet = (Dir, Position, Velocity)
+
+
+-- TODO: convert to record
+data Tank = Tank Dir Position Velocity Player Color Size [TankBonus] [Bullet]
+	deriving (Binary, Generic, Show)
+
 
 type Board = Array (Int, Int) Field
 
-data GameState = GameState Board [Tank]
-	deriving (Generic, Show)
-	
-instance Binary GameState
+
+-- TODO: convert to record
+-- TODO: [Tank] ==> (Map PlayerId Tank) ??
+data GameState = GameState Board [Tank] (Maybe (BonusItem, Position)) [(GeneralBonus, Int)]
+    deriving (Binary, Generic, Show)
+
+
+-- TODO: calculate actual coordinates for each tank
+-- TODO: randomness
+newTank :: Player -> Int -> Tank
+newTank pl _i = Tank UP (0, 0) (0, 0) pl Yellow Small [] []
+
+
+
+initialGameState :: Board -> GameState
+initialGameState board = GameState board [newTank Human 0] Nothing []
+
 
 x_coeff :: Int
 x_coeff = 17

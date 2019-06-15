@@ -39,8 +39,8 @@ readMoves chan moves = do
 runServer :: Chan Msg -> IORef MovesMap -> Board -> IO ()
 runServer chan moves board = do
 	currMoves <- readIORef moves
-	writeChan chan (SendGameState (GameState board [Tank (0, 0) UP []]))
-	IO.putStrLn $ show (GameState board [Tank (0, 0) UP []])
+	writeChan chan (SendGameState (initialGameState board))
+	IO.putStrLn $ show (initialGameState board)
 	-- wait 1s
 	threadDelay 1000000
 	runServer chan moves board
