@@ -8,7 +8,7 @@ import Control.Monad (when)
 import Control.Monad.Fix (fix)
 import Data.IORef
 import Data.Map
-import Data.ByteString.Lazy as BS
+import Data.ByteString.Lazy.Char8 as BS
 import Data.Binary
 import Board
 
@@ -83,7 +83,7 @@ runConn (sock, _) chan playerNum = do
     reader <- forkIO $ fix $ \loop -> do
         e <- readChan commLine
         case e of
-            SendBoard board -> BS.hPutStrLn hdl (encode board)
+            SendBoard board -> BS.hPutStrLn hdl ((encode board))
             _ -> return ()
         loop
 
