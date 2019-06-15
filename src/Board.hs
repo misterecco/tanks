@@ -9,7 +9,7 @@ import Data.Array
 import Data.Binary
 import Data.Bits
 import Data.ByteString as BS (ByteString)
-import Data.ByteString.Lazy (fromStrict)
+import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Rep, Generic)
 
 data Field =
@@ -19,10 +19,31 @@ data Field =
     | Ice
     | Empty
     deriving (Generic, Show)
-    
+
 instance Binary Field
 
+data Dir =
+	  UP
+	| DOWN
+	| LEFT
+	| RIGHT
+	deriving (Generic, Show)
+
+instance Binary Dir
+
+type Bullet = (Dir, Int, Int)
+
+data Tank = Tank (Int, Int) Dir [Bullet]
+	deriving (Generic, Show)
+
+instance Binary Tank
+
 type Board = Array (Int, Int) Field
+
+data GameState = GameState Board [Tank]
+	deriving (Generic, Show)
+	
+instance Binary GameState
 
 x_coeff :: Int
 x_coeff = 17
@@ -48,3 +69,9 @@ randomBoard n m = array ((0,0),(n-1,m-1)) (concat [ [ ((i, j), randomField i j) 
 
 decodeBoard :: BS.ByteString -> Board
 decodeBoard str = decode $ fromStrict str
+
+encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
+encodeGameState gs =  encode gs
+
+decodeGameState :: BS.ByteString -> GameState
+decodeGameState str = decode $ fromStrict str

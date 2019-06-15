@@ -52,5 +52,5 @@ main = withSocketsDo $ do
     readStream hdl = do
 		msg <- BS.hGetLine hdl
 		Sys.putStr "Received: "
-		Sys.putStrLn $ show (decodeBoard msg)
+		Sys.putStrLn $ show (decodeGameState msg)
 		readStream hdl

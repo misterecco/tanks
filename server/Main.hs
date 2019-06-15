@@ -13,17 +13,14 @@ import Data.Binary
 import Board
 
 data GameAction =
-      UP
-    | DOWN
-    | LEFT
-    | RIGHT
+      Move Dir
     | SHOOT
     deriving Show
 
 -- Change to Move Int GameAction
 data GameEvent =
-      Move Int String
-    | SendBoard Board
+      Action Int String
+    | SendGameState GameState
 
 type Msg = GameEvent
 type MovesMap = Map Int String
@@ -32,7 +29,7 @@ readMoves :: Chan Msg -> IORef MovesMap -> IO ()
 readMoves chan moves = do
     e <- readChan chan
     case e of
-        Move senderNum action -> do {
+        Action senderNum action -> do {
             modifyIORef moves (insert senderNum action);
             IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ action
         }
@@ -42,7 +39,8 @@ readMoves chan moves = do
 runServer :: Chan Msg -> IORef MovesMap -> Board -> IO ()
 runServer chan moves board = do
 	currMoves <- readIORef moves
-	writeChan chan (SendBoard board)
+	writeChan chan (SendGameState (GameState board [Tank (0, 0) UP []]))
+	IO.putStrLn $ show (GameState board [Tank (0, 0) UP []])
 	-- wait 1s
 	threadDelay 1000000
 	runServer chan moves board
@@ -58,7 +56,7 @@ main = do
     _ <- readChan chan
     loop
   map <- newIORef Data.Map.empty
-  forkIO (runServer chan map (getBoard 10 10))
+  forkIO (runServer chan map (getBoard 5 5))
   forkIO (readMoves chan map)
   mainLoop sock chan 1
 
@@ -70,7 +68,7 @@ mainLoop sock chan msgNum = do
 
 runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
 runConn (sock, _) chan playerNum = do
-    let broadcast msg = writeChan chan (Move playerNum msg)
+    let broadcast msg = writeChan chan (Action playerNum msg)
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
@@ -83,7 +81,7 @@ runConn (sock, _) chan playerNum = do
     reader <- forkIO $ fix $ \loop -> do
         e <- readChan commLine
         case e of
-            SendBoard board -> BS.hPutStrLn hdl ((encode board))
+            SendGameState gameState -> BS.hPutStrLn hdl ((encodeGameState gameState))
             _ -> return ()
         loop
 
