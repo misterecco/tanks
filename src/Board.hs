@@ -25,7 +25,7 @@ data Player = Human | NPC
 data Color = Yellow | Green | Silver
   deriving (Binary, Generic, Show)
 
-data Size = Small | Medium | Large
+data Size = Small | Medium | Large | Huge
   deriving (Binary, Generic, Show)
 
 data TankBonus = Raft | Shield | Flashing
@@ -78,7 +78,7 @@ data GameState = GameState
 -- TODO: randomness
 -- TODO: record notation
 newTank :: Player -> Int -> Tank
-newTank pl _i = Tank UP (0, 0) (0, 0) pl Yellow Small [] []
+newTank pl _i = Tank UP (0, 0) (0, 0) pl Green Small [] []
 
 
 -- TODO: record notation

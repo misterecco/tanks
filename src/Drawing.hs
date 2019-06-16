@@ -5,7 +5,6 @@ module Drawing where
 import qualified Data.Map as Map
 import qualified SDL
 import qualified SDL.Image
-import qualified SDLUtils as U
 
 import Control.Monad
 import Control.Monad.Extra (whileM)
@@ -16,20 +15,8 @@ import Foreign.C.Types (CInt)
 import SDL (($=))
 
 import Board
-
-tileSize :: CInt
-tileSize = 8
-
-
-getTextRect :: Field -> SDL.Rectangle CInt
-getTextRect f = case f of
-  Bricks -> toRect 256 64
-  Forest -> toRect 264 72
-  Stone -> toRect 256 72
-  Ice -> toRect 264 72
-  Empty -> toRect 272 72
-  where
-    toRect x y = U.mkRect x y tileSize tileSize
+import Texturing
+import qualified SDLUtils as U
 
 
 drawTexture :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> m ()
@@ -46,9 +33,10 @@ drawTexturePart :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> SDL.Rectangle C
 drawTexturePart r t ps pd = SDL.copy r t (Just ps) (Just pd)
 
 
-drawField :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> SDL.Rectangle CInt -> (CInt, CInt) -> m ()
-drawField r t p (x, y) = do
-  drawTexturePart r t p (U.mkRect (tileSize * x) (tileSize * y) tileSize tileSize)
+drawObject :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> SDL.Rectangle CInt -> (CInt, CInt) -> CInt -> m ()
+drawObject r t p (x, y) s = do
+  let ts = tileSize * s
+  drawTexturePart r t p $ U.mkRect (tileSize * x) (tileSize * y) ts ts
 
 
 drawBoard :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Board -> m ()
@@ -58,12 +46,14 @@ drawBoard r t board = do
   setViewport r boardPos
 
   forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos@(x, y) -> do
-    drawField r t (getTextRect (board ! pos)) (fromIntegral x, fromIntegral y)
+    drawObject r t (getFieldRect (board ! pos)) (fromIntegral x, fromIntegral y) 1
 
 
--- TODO: implement
 drawTank :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Tank -> m ()
-drawTank = undefined
+drawTank r t tank = do
+  let (x, y) = tPosition tank
+  drawObject r t (getTankRect tank) (fromIntegral x, fromIntegral y) 2
+  -- forM_ (tBullets tank) (drawBullet r t)
 
 
 -- TODO: implement
@@ -83,7 +73,7 @@ drawBonus r t bi = case bi of
 drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()
 drawGame r t g = do
   drawBoard r t (gBoard g)
-  drawBonus r t (gBonusItem g)
+  -- drawBonus r t (gBonusItem g)
   forM_ (gTanks g) (drawTank r t)
 
 

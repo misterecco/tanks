@@ -31,8 +31,9 @@ main = U.withSDL $ U.withWindow "Lesson 03" (640, 480) $
     t <- SDL.Image.loadTexture r "./assets/tanks.png"
 
     let board = randomBoard 26 26
+    let game = initialGameState board
 
-    let doRender = SDL.clear r >> drawBoard r t board >> SDL.present r
+    let doRender = SDL.clear r >> drawGame r t game >> SDL.present r
 
     whileM $
       U.isContinue <$> SDL.pollEvent
