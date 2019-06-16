@@ -43,6 +43,9 @@ data Field = Bricks | Forest | Stone | Ice | Empty
 data Dir = UP | DOWN | LEFT | RIGHT
   deriving (Binary, Generic, Show)
 
+data Eagle = Alive | Dead
+  deriving (Binary, Generic, Show)
+
 
 data Bullet = Bullet
   { bDirection :: Dir
@@ -65,25 +68,33 @@ type Board = Array (Int, Int) Field
 
 -- TODO: [Tank] ==> (Map PlayerId Tank) ??
 -- TODO: lives, points, enemies left, board number
--- TODO: eagle state
 data GameState = GameState
   { gBoard :: Board
   , gTanks :: [Tank]
   , gBonusItem :: Maybe (BonusItem, Position)
   , gGeneralBonuses :: [(GeneralBonus, Int)]
+  , gEagle :: Eagle
   } deriving (Binary, Generic, Show)
 
 
--- TODO: calculate actual coordinates for each tank
--- TODO: randomness
--- TODO: record notation
 newTank :: Player -> Int -> Tank
-newTank pl _i = Tank UP (0, 0) (0, 0) pl Green Small [] []
+newTank pl i = case pl of
+  Human -> let
+    (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
+      in
+    Tank UP (x, 24) (0, 0) pl col Small [] []
+  NPC -> let
+    x = case i `mod` 3 of
+      0 -> 0
+      1 -> 12
+      2 -> 24
+      in
+    Tank DOWN (x, 0) (0, 0) pl Green Small [] []
 
 
--- TODO: record notation
 initialGameState :: Board -> GameState
-initialGameState board = GameState board [newTank Human 0] Nothing []
+initialGameState board = GameState board tanks (Just (Helmet, (10, 10))) [] Alive
+  where tanks = [newTank Human 0, newTank Human 1, newTank NPC 0, newTank NPC 1, newTank NPC 2]
 
 
 x_coeff :: Int

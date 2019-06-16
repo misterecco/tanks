@@ -27,10 +27,10 @@ main :: IO ()
 main = U.withSDL $ U.withWindow "Lesson 03" (640, 480) $
   \w -> U.withRenderer w $ \r -> do
 
-    SDL.rendererDrawColor r $= SDL.V4 maxBound maxBound maxBound maxBound
-    t <- SDL.Image.loadTexture r "./assets/tanks.png"
+    SDL.rendererDrawColor r $= SDL.V4 minBound minBound minBound maxBound
+    t <- SDL.Image.loadTexture r "./assets/tanks_alpha.png"
 
-    let board = randomBoard 26 26
+    let board = getBoard 26 26
     let game = initialGameState board
 
     let doRender = SDL.clear r >> drawGame r t game >> SDL.present r
@@ -40,4 +40,3 @@ main = U.withSDL $ U.withWindow "Lesson 03" (640, 480) $
       >>= U.conditionallyRun doRender
 
     SDL.destroyTexture t
-    -- SDL.destroyTexture t1

@@ -29,6 +29,10 @@ draw r p t = do
   drawTexture r t
 
 
+toCIntPair :: (Int, Int) -> (CInt, CInt)
+toCIntPair (x, y) = (fromIntegral x, fromIntegral y)
+
+
 drawTexturePart :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> SDL.Rectangle CInt -> SDL.Rectangle CInt -> m ()
 drawTexturePart r t ps pd = SDL.copy r t (Just ps) (Just pd)
 
@@ -45,8 +49,8 @@ drawBoard r t board = do
   let boardPos = U.mkRect (16 :: CInt) 16 ((fromIntegral (n+1)) * tileSize) ((fromIntegral (m+1)) * tileSize)
   setViewport r boardPos
 
-  forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos@(x, y) -> do
-    drawObject r t (getFieldRect (board ! pos)) (fromIntegral x, fromIntegral y) 1
+  forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos -> do
+    drawObject r t (getFieldRect (board ! pos)) (toCIntPair pos) 1
 
 
 drawTank :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Tank -> m ()
@@ -64,17 +68,20 @@ drawBullet = undefined
 drawBonus :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Maybe (BonusItem, Position) -> m ()
 drawBonus r t bi = case bi of
   Nothing -> return ()
-  -- TODO: implement
-  Just (b, pos) -> return ()
+  Just (b, pos) -> drawObject r t (getBonusRect b) (toCIntPair pos) 2
 
 
--- TODO: use this instead of drawBoard
--- TODO: draw eagle
+drawEagle :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Eagle -> m ()
+drawEagle r t e =
+  drawObject r t (getEagleRect e) (12, 24) 2
+
+
 drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()
 drawGame r t g = do
-  drawBoard r t (gBoard g)
-  -- drawBonus r t (gBonusItem g)
+  drawEagle r t (gEagle g)
   forM_ (gTanks g) (drawTank r t)
+  drawBoard r t (gBoard g)
+  drawBonus r t (gBonusItem g)
 
 
 setViewport :: (MonadIO m) => SDL.Renderer -> SDL.Rectangle CInt -> m ()
