@@ -44,31 +44,42 @@ data Dir = UP | DOWN | LEFT | RIGHT
   deriving (Binary, Generic, Show)
 
 
--- TODO: record ??
-type Bullet = (Dir, Position, Velocity)
+data Bullet = Bullet
+  { bDirection :: Dir
+  , bPosition :: Position
+  , bVelocity :: Velocity
+  } deriving (Binary, Generic, Show)
 
-
--- TODO: convert to record
-data Tank = Tank Dir Position Velocity Player Color Size [TankBonus] [Bullet]
-	deriving (Binary, Generic, Show)
-
+data Tank = Tank
+  { tDirection :: Dir
+  , tPosition :: Position
+  , tVelocity :: Velocity
+  , tPlayer :: Player
+  , tColor :: Color
+  , tSize :: Size
+  , tBonuses :: [TankBonus]
+  , tBullets :: [Bullet]
+  } deriving (Binary, Generic, Show)
 
 type Board = Array (Int, Int) Field
 
-
--- TODO: convert to record
 -- TODO: [Tank] ==> (Map PlayerId Tank) ??
-data GameState = GameState Board [Tank] (Maybe (BonusItem, Position)) [(GeneralBonus, Int)]
-    deriving (Binary, Generic, Show)
+data GameState = GameState
+  { gBoard :: Board
+  , gTanks :: [Tank]
+  , gBonusItem :: Maybe (BonusItem, Position)
+  , gGeneralBonuses :: [(GeneralBonus, Int)]
+  } deriving (Binary, Generic, Show)
 
 
 -- TODO: calculate actual coordinates for each tank
 -- TODO: randomness
+-- TODO: record notation ??
 newTank :: Player -> Int -> Tank
 newTank pl _i = Tank UP (0, 0) (0, 0) pl Yellow Small [] []
 
 
-
+-- TODO: record notation ??
 initialGameState :: Board -> GameState
 initialGameState board = GameState board [newTank Human 0] Nothing []
 
