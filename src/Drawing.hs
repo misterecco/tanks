@@ -61,5 +61,31 @@ drawBoard r t board = do
     drawField r t (getTextRect (board ! pos)) (fromIntegral x, fromIntegral y)
 
 
+-- TODO: implement
+drawTank :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Tank -> m ()
+drawTank = undefined
+
+
+-- TODO: implement
+drawBullet :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Bullet -> m ()
+drawBullet = undefined
+
+
+drawBonus :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Maybe (BonusItem, Position) -> m ()
+drawBonus r t bi = case bi of
+  Nothing -> return ()
+  -- TODO: implement
+  Just (b, pos) -> return ()
+
+
+-- TODO: use this instead of drawBoard
+-- TODO: draw eagle
+drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()
+drawGame r t g = do
+  drawBoard r t (gBoard g)
+  drawBonus r t (gBonusItem g)
+  forM_ (gTanks g) (drawTank r t)
+
+
 setViewport :: (MonadIO m) => SDL.Renderer -> SDL.Rectangle CInt -> m ()
 setViewport r s = SDL.rendererViewport r $= Just s

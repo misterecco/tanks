@@ -64,6 +64,8 @@ data Tank = Tank
 type Board = Array (Int, Int) Field
 
 -- TODO: [Tank] ==> (Map PlayerId Tank) ??
+-- TODO: lives, points, enemies left, board number
+-- TODO: eagle state
 data GameState = GameState
   { gBoard :: Board
   , gTanks :: [Tank]
@@ -74,12 +76,12 @@ data GameState = GameState
 
 -- TODO: calculate actual coordinates for each tank
 -- TODO: randomness
--- TODO: record notation ??
+-- TODO: record notation
 newTank :: Player -> Int -> Tank
 newTank pl _i = Tank UP (0, 0) (0, 0) pl Yellow Small [] []
 
 
--- TODO: record notation ??
+-- TODO: record notation
 initialGameState :: Board -> GameState
 initialGameState board = GameState board [newTank Human 0] Nothing []
 
