@@ -45,7 +45,7 @@ drawObject r t p (x, y) s = do
 drawBoard :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Board -> m ()
 drawBoard r t board = do
   let (_,(n, m)) = bounds board
-  let boardPos = U.mkRect (16 :: CInt) 16 ((fromIntegral (n+1)) * tileSize) ((fromIntegral (m+1)) * tileSize)
+  let boardPos = U.mkRect 16 16 ((fromIntegral (25+1)) * tileSize) ((fromIntegral (25+1)) * tileSize)
   setViewport r boardPos
 
   forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos -> do
