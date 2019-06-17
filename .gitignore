@@ -1,4 +1,5 @@
 .stack-work/
 server.sh
+.idea/
 tanks.cabal
 *~

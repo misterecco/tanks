@@ -17,6 +17,7 @@ import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Generic, Rep)
 
+import Debug.Trace
 
 type Position = (Int, Int)
 type Velocity = (Int, Int)
@@ -144,6 +145,9 @@ tankOverlapBullet (x, y) tank =
 	let (tx, ty) = tPosition tank in
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 
+tankOverlapField :: Position -> Position -> Bool
+tankOverlapField (x, y) (tx, ty) =
+	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 -- FIELD FUNCTIONS --
 
 randomField :: Int -> Int -> Field
@@ -155,8 +159,22 @@ randomField i j =
         3 -> Ice
         _ -> Empty
 
+getFieldsByBulletPosition :: Board -> Position -> [(Position, Field)]
+getFieldsByBulletPosition board pos =
+	let field = maybeGetField board pos in
+	case field of
+		Nothing -> []
+		Just f -> if canEnterField f then [] else [(pos, f)]
+
+getFieldsByTank :: Board -> (Int, Int) -> [Field]
+getFieldsByTank (Board _ _ mapa) pos =
+    elems $ Data.Map.filterWithKey (\k -> \v -> tankOverlapField k pos) mapa
+
 getField :: Board -> (Int, Int) -> Field
-getField (Board _ _ mapa) pos = mapa ! pos
+getField (Board _ _ mapa) pos = 
+	case Data.Map.lookup pos mapa of
+		Just x -> x
+		Nothing -> traceShow pos Empty
 
 maybeGetField :: Board -> (Int, Int) -> Maybe Field
 maybeGetField (Board _ _ mapa) pos = Data.Map.lookup pos mapa

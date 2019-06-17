@@ -71,11 +71,9 @@ addNewTank pl gs =
 moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
 	let newPos = moveByDir pos 1 dir in
-	let maybeField = maybeGetField (gBoard gs) newPos  in
+	let fields = getFieldsByTank (gBoard gs) newPos in
 	let tanks = getTanksByTankPosition gs newPos in
-	case maybeField of
-		Just field -> if length tanks == 1 && canEnterField field then newPos else pos
-		Nothing -> pos
+	if length fields == 4 && length tanks == 1 && all canEnterField fields then newPos else pos
 
 moveFieldTank :: GameState -> Tank -> Tank
 moveFieldTank gs tank =
@@ -151,6 +149,17 @@ updateTanks f gs =
     (gGeneralBonuses gs)
 	(gEagle gs)
 
+updateFieldsBoard :: (Map Position Field -> Map Position Field) -> Board -> Board
+updateFieldsBoard f (Board n m b) = Board n m (f b)
+
+updateFields :: (Map Position Field -> Map Position Field) -> GameState -> GameState
+updateFields f gs =
+	GameState
+	(updateFieldsBoard f (gBoard gs))
+	(gTanks gs)
+	(gBonusItem gs)
+    (gGeneralBonuses gs)
+	(gEagle gs)
 
 modifyMoves :: [(Player, GameAction)] -> GameState -> ([(Player, GameAction)], GameState)
 modifyMoves [] gs = ([], gs)
@@ -175,10 +184,17 @@ moveBullet bullet gs =
 		)) gs
 	in
 	-- destroy bricks
+	let fields = getFieldsByBulletPosition (gBoard gs) newPos in
+	let lastGameState = updateFields (mapWithKey
+		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty))
+		newGameState
+	in
 	-- move Bullet
 	if List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
-	then (Nothing, newGameState)
-	else (Just $ Bullet (bDirection bullet) newPos (bVelocity bullet) (bPlayer bullet), newGameState)
+		|| fields /= []
+		|| (isNothing $ maybeGetField (gBoard gs) newPos)
+	then (Nothing, lastGameState)
+	else (Just $ Bullet (bDirection bullet) newPos (bVelocity bullet) (bPlayer bullet), lastGameState)
 
 moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
 moveBulletsList [] gs = ([], gs)
