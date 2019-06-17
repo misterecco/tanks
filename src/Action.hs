@@ -3,6 +3,8 @@
 
 module Action where
 
+import qualified SDL
+
 import Data.Aeson
 
 import Data.Map
@@ -10,7 +12,7 @@ import Data.IORef
 import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Generic)
-import Graphics.Vty
+
 import Board
 
 data GameAction =
@@ -20,25 +22,28 @@ data GameAction =
     | NoAction
     | InvalidAction
   deriving (Generic, Show, Eq, FromJSON, ToJSON)
-  
+
 type MovesMap = Map Player GameAction
 
-toAction :: Event -> GameAction
-toAction (EvKey KLeft _) = Move LEFT
-toAction (EvKey KRight _) = Move RIGHT
-toAction (EvKey KUp _) = Move UP
-toAction (EvKey KDown _) = Move DOWN
-toAction (EvKey (KChar ' ') _) = Shoot
+toAction :: SDL.EventPayload -> GameAction
+toAction (SDL.KeyboardEvent (SDL.KeyboardEventData _ SDL.Pressed False keysym)) =
+  case SDL.keysymKeycode keysym of
+    SDL.KeycodeLeft -> Move LEFT
+    SDL.KeycodeRight -> Move RIGHT
+    SDL.KeycodeUp -> Move UP
+    SDL.KeycodeDown -> Move DOWN
+    SDL.KeycodeSpace -> Shoot
+    _ -> InvalidAction
 toAction _ = InvalidAction
 
-isAction :: Event -> Bool
+isAction :: SDL.EventPayload -> Bool
 isAction e = toAction e /= InvalidAction
 
 encodeGameAction :: GameAction -> Data.ByteString.Lazy.ByteString
 encodeGameAction gs = encode gs
 
 decodeGameAction :: BS.ByteString -> GameAction
-decodeGameAction str = 
+decodeGameAction str =
 	case decode $ fromStrict str of
 	  Just x -> x
 	  _ -> InvalidAction
@@ -51,13 +56,13 @@ updateMovesMap player gameAction movesMap =
 	f (Just _) = Just gameAction
 
 addNewTank :: Player -> GameState -> GameState
-addNewTank pl gs = 
+addNewTank pl gs =
 	GameState
 	(gBoard gs)
 	(Tank DOWN (3, 0) (0, 0) pl Green Small [] [] : (gTanks gs))
 	(gBonusItem gs)
     (gGeneralBonuses gs)
-	(gEagle gs)
+  (gEagle gs)
 
 moveTank :: Player -> Dir -> [Tank] -> [Tank]
 moveTank _ _ [] = []
@@ -66,7 +71,7 @@ moveTank pl dir (tank:xs) =
 	then newTank:xs
 	else tank:(moveTank pl dir xs)
 	where newTank =
-		Tank dir 
+		Tank dir
 		(tPosition tank)
 		(tVelocity tank)
 		(tPlayer tank)
@@ -74,7 +79,7 @@ moveTank pl dir (tank:xs) =
 		(tSize tank)
 		(tBonuses tank)
 		(tBullets tank)
-		
+
 shootTank :: Player -> [Tank] -> [Tank]
 shootTank _ [] = []
 shootTank pl (tank:xs) =
@@ -97,14 +102,14 @@ shootTank pl (tank:xs) =
 		):(tBullets tank))
 
 updateTanks :: ([Tank] -> [Tank]) -> GameState -> GameState
-updateTanks f gs = 
+updateTanks f gs =
 	GameState
 	(gBoard gs)
 	(f (gTanks gs))
 	(gBonusItem gs)
     (gGeneralBonuses gs)
 	(gEagle gs)
-	
+
 
 modifyMoves :: [(Player, GameAction)] -> GameState -> ([(Player, GameAction)], GameState)
 modifyMoves [] gs = ([], gs)
@@ -124,4 +129,4 @@ updateGameState gs movesMap = do {
 		return newGameState;
 	}
 }
-	
+

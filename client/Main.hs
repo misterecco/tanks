@@ -16,8 +16,6 @@ import Data.ByteString as BS
 import Data.ByteString.Lazy.Char8 as BSL
 import Data.Binary
 import Foreign.C.Types (CInt)
-import Graphics.Vty
-import Graphics.Vty.Config
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import SDL (($=))
@@ -59,14 +57,12 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (640, 480) $
         readStream hdl doRender
 
     talk hdl = do
-        config <- standardIOConfig
-        vty <- mkVty config
         fix $ \loop -> do
-            e <- nextEvent vty
-            print $ "Last event was: " ++ show e
-            if isAction e then BSL.hPutStrLn hdl (encodeGameAction (toAction e)) else return ()
+            e <- SDL.eventPayload <$> SDL.waitEvent
+            -- print $ "Last event was: " ++ show e
+            when (isAction e) $ BSL.hPutStrLn hdl (encodeGameAction (toAction e))
             case e of
-                EvKey (KChar 'c') [MCtrl] -> Graphics.Vty.shutdown vty >> Sys.putStrLn "OK, quit"
+                SDL.QuitEvent -> Sys.putStrLn "OK, quit"
                 _ -> loop
 
     readStream hdl doRender = do
