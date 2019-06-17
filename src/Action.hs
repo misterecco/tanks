@@ -68,11 +68,11 @@ addNewTank pl gs =
 
 moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
-	let newPos = moveByDir pos 2 dir in
+	let newPos = moveByDir pos 1 dir in
 	let maybeField = maybeGetField (gBoard gs) newPos  in
 	let tanks = getTanksByPosition gs newPos in
 	case maybeField of
-		Just field -> if tanks == [] && canEnterField field then newPos else pos
+		Just field -> if length tanks == 1 && canEnterField field then newPos else pos
 		Nothing -> pos
 
 moveFieldTank :: GameState -> Tank -> Tank

@@ -39,8 +39,8 @@ runServer chan moves gameState = do
 	writeChan chan (SendGameState newState)
 --	IO.putStrLn $ show newState
 	IO.putStrLn $ show currMoves
-	-- wait 1s
-	threadDelay 1000000
+	-- wait 0.25s
+	threadDelay 250000
 	runServer chan moves newState
 
 main :: IO ()
