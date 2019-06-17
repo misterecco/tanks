@@ -168,7 +168,7 @@ moveBullet bullet gs =
 	let player = bPlayer bullet in
 	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in
 	let maybeField = maybeGetField (gBoard gs) newPos  in
-	let tanks = getTanksByTankPosition gs newPos in
+	let tanks = getTanksByBulletPosition gs newPos in
 	let newGameState = updateTanks (List.filter (\tank ->
 		sameTeam player (tPlayer tank) ||
 		not (tankOverlap newPos tank)
