@@ -9,7 +9,6 @@ import qualified SDL.Image
 import Control.Monad
 import Control.Monad.Extra (whileM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Array
 import Data.Int
 import Foreign.C.Types (CInt)
 import SDL (($=))
@@ -50,7 +49,7 @@ drawBoard r t board = do
   setViewport r boardPos
 
   forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos -> do
-    drawObject r t (getFieldRect (board ! pos)) (toCIntPair pos) 1
+    drawObject r t (getFieldRect (getField board pos)) (toCIntPair pos) 1
 
 
 drawTank :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Tank -> m ()

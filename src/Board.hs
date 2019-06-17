@@ -6,12 +6,16 @@
 
 module Board where
 
-import Data.Array
-import Data.Binary
+import Data.Aeson
+
+import qualified Data.Array
+
+import Data.List
+import Data.Map
 import Data.Bits
 import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Rep)
 
 
 type Position = (Int, Int)
@@ -19,39 +23,45 @@ type Velocity = (Int, Int)
 
 
 -- Human and NPC tanks have different shapes
-data Player = Human | NPC
-  deriving (Binary, Generic, Show)
+data Player = Human Int | NPC Int
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
+
+instance Ord Player where
+	(<=) (Human _) (NPC _) = True
+	(<=) (NPC _) (Human _) = False
+	(<=) (Human a) (Human b) = a <= b
+	(<=) (NPC a) (NPC b) = a <= b
 
 data Color = Yellow | Green | Silver
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data Size = Small | Medium | Large | Huge
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data TankBonus = Raft | Shield | Flashing
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data GeneralBonus = Bunker | Freeze
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data BonusItem = Helmet | Clock | Shovel | Star | Grenade | Life | Pistol | Boat
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data Field = Bricks | Forest | Stone | Ice | Empty
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data Dir = UP | DOWN | LEFT | RIGHT
-  deriving (Binary, Generic, Show, Eq)
+  deriving (Generic, Show, Eq, ToJSON, FromJSON)
 
 data Eagle = Alive | Dead
-  deriving (Binary, Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 
 data Bullet = Bullet
   { bDirection :: Dir
   , bPosition :: Position
   , bVelocity :: Velocity
-  } deriving (Binary, Generic, Show)
+  } deriving (Generic, Show, FromJSON, ToJSON)
 
 data Tank = Tank
   { tDirection :: Dir
@@ -62,9 +72,10 @@ data Tank = Tank
   , tSize :: Size
   , tBonuses :: [TankBonus]
   , tBullets :: [Bullet]
-  } deriving (Binary, Generic, Show)
+  } deriving (Generic, Show, FromJSON, ToJSON)
 
-type Board = Array (Int, Int) Field
+data Board = Board Int Int (Map (Int, Int) Field)
+	deriving (Generic, Show, FromJSON, ToJSON)
 
 -- TODO: [Tank] ==> (Map PlayerId Tank) ??
 -- TODO: lives, points, enemies left, board number
@@ -74,16 +85,16 @@ data GameState = GameState
   , gBonusItem :: Maybe (BonusItem, Position)
   , gGeneralBonuses :: [(GeneralBonus, Int)]
   , gEagle :: Eagle
-  } deriving (Binary, Generic, Show)
+  } deriving (Generic, Show, FromJSON, ToJSON)
 
 
-newTank :: Player -> Int -> Tank
-newTank pl i = case pl of
-  Human -> let
+newTank :: Player -> Tank
+newTank pl = case pl of
+  Human i -> let
     (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
       in
     Tank UP (x, 24) (0, 0) pl col Small [] []
-  NPC -> let
+  NPC i -> let
     x = case i `mod` 3 of
       0 -> 0
       1 -> 12
@@ -94,7 +105,7 @@ newTank pl i = case pl of
 
 initialGameState :: Board -> GameState
 initialGameState board = GameState board tanks (Just (Helmet, (10, 10))) [] Alive
-  where tanks = [newTank Human 0, newTank Human 1, newTank NPC 0, newTank NPC 1, newTank NPC 2]
+  where tanks = [newTank $ Human 0, newTank $ Human 1, newTank $ NPC 0, newTank $ NPC 1, newTank $ NPC 2]
 
 
 x_coeff :: Int
@@ -112,18 +123,23 @@ randomField i j =
         3 -> Ice
         _ -> Empty
 
+bounds :: Board -> ((Int, Int), (Int, Int))
+bounds (Board n m _ ) = ((0, 0), (n-1, m-1))
+
+getField :: Board -> (Int, Int) -> Field
+getField (Board _ _ mapa) pos = mapa ! pos
 
 getBoard :: Int -> Int -> Board
-getBoard n m = array ((0,0),(n-1,m-1)) (concat [ [ ((i, j), Empty) | j <- [0..n-1] ] | i <- [0..m-1]] )
+getBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), Empty) | j <- [0..n-1] ] | i <- [0..m-1]] )
 
 randomBoard :: Int -> Int -> Board
-randomBoard n m = array ((0,0),(n-1,m-1)) (concat [ [ ((i, j), randomField i j) | j <- [0..n-1] ] | i <- [0..m-1]] )
-
-decodeBoard :: BS.ByteString -> Board
-decodeBoard str = decode $ fromStrict str
+randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField i j) | j <- [0..n-1] ] | i <- [0..m-1]] )
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
-encodeGameState gs =  encode gs
+encodeGameState gs =  encode $ gs
 
 decodeGameState :: BS.ByteString -> GameState
-decodeGameState str = decode $ fromStrict str
+decodeGameState str =
+	case decode $ fromStrict str of
+	  Just x -> x
+	  _ -> error "Invalid Game State"

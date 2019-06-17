@@ -30,8 +30,8 @@ getTankRect t = let
     Large -> 32
     Huge -> 48
   playerY = case tPlayer t of
-    Human -> 0
-    NPC -> 64
+    Human _ -> 0
+    NPC _ -> 64
   directionX = case tDirection t of
     UP -> 0
     LEFT -> 32

@@ -16,31 +16,32 @@ import Action
 
 -- Change to Move Int GameAction
 data GameEvent =
-      Action Int GameAction
+      Action Player GameAction
     | SendGameState GameState
 
 type Msg = GameEvent
-type MovesMap = Map Int GameAction
 
 readMoves :: Chan Msg -> IORef MovesMap -> IO ()
 readMoves chan moves = do
     e <- readChan chan
     case e of
         Action senderNum action -> do {
-            modifyIORef moves (insert senderNum action);
+            modifyIORef moves (updateMovesMap senderNum action);
             IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ (show action)
         }
         _ -> return ()
     readMoves chan moves
 
-runServer :: Chan Msg -> IORef MovesMap -> Board -> IO ()
-runServer chan moves board = do
+runServer :: Chan Msg -> IORef MovesMap -> GameState -> IO ()
+runServer chan moves gameState = do
+	newState <- updateGameState gameState moves
 	currMoves <- readIORef moves
-	writeChan chan (SendGameState (initialGameState board))
-	IO.putStrLn $ show (initialGameState board)
+	writeChan chan (SendGameState newState)
+	IO.putStrLn $ show newState
+	IO.putStrLn $ show currMoves
 	-- wait 1s
 	threadDelay 1000000
-	runServer chan moves board
+	runServer chan moves newState
 
 main :: IO ()
 main = do
@@ -53,7 +54,7 @@ main = do
     _ <- readChan chan
     loop
   map <- newIORef Data.Map.empty
-  forkIO (runServer chan map (getBoard 5 5))
+  forkIO (runServer chan map (initialGameState (getBoard 5 5)))
   forkIO (readMoves chan map)
   mainLoop sock chan 1
 
@@ -65,7 +66,7 @@ mainLoop sock chan msgNum = do
 
 runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
 runConn (sock, _) chan playerNum = do
-    let broadcast msg = writeChan chan (Action playerNum (decodeGameAction msg))
+    let broadcast msg = writeChan chan (Action (Human playerNum) (decodeGameAction msg))
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
@@ -75,8 +76,9 @@ runConn (sock, _) chan playerNum = do
     reader <- forkIO $ fix $ \loop -> do
         e <- readChan commLine
         case e of
-            SendGameState gameState -> BSL.hPutStrLn hdl ((encodeGameState gameState))
-            SendGameState gameState -> BSL.hPutStrLn hdl $ BSL.fromString "Dum dum dum"
+            SendGameState gameState -> do {
+				BSL.hPutStrLn hdl ((encodeGameState gameState))
+				}
             _ -> return ()
         loop
 

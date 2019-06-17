@@ -32,6 +32,7 @@ main = withSocketsDo $ do
         return sock
     talkSock sock = do
         hdl <- socketToHandle sock ReadWriteMode
+        BSL.hPutStrLn hdl (encodeGameAction NewPlayer)
         forkIO (readStream hdl)
         talk hdl
     	
@@ -49,6 +50,5 @@ main = withSocketsDo $ do
     readStream hdl = do
 		msg <- BS.hGetLine hdl
 		Sys.putStr "Received: "
-		BS.putStrLn $ msg
---		Sys.putStrLn $ show (decodeGameState msg)
+		Sys.putStrLn $ show (decodeGameState msg)
 		readStream hdl
