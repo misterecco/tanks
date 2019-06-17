@@ -48,9 +48,16 @@ drawObject r t p (x, y) s = do
 drawBoard :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Board -> m ()
 drawBoard r t board = do
   let (_,(n, m)) = bounds board
-
   forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos -> do
-    drawObject r t (getFieldRect (getField board pos)) (toCIntPair pos) 1
+    let field = getField board pos
+    unless (field == Forest) $ drawObject r t (getFieldRect field) (toCIntPair pos) 1
+
+drawForest :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Board -> m ()
+drawForest r t board = do
+  let (_,(n, m)) = bounds board
+  forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos -> do
+    let field = getField board pos
+    when (field == Forest) $ drawObject r t (getFieldRect field) (toCIntPair pos) 1
 
 
 drawTank :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Tank -> m ()
@@ -90,8 +97,9 @@ drawGame r t g = do
   setViewport r boardPos
 
   drawEagle r t (gEagle g)
-  forM_ (gTanks g) (drawTank r t)
   drawBoard r t (gBoard g)
+  forM_ (gTanks g) (drawTank r t)
+  drawForest r t (gBoard g)
   drawBonus r t (gBonusItem g)
 
 

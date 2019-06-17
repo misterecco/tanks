@@ -34,6 +34,7 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
 
     SDL.rendererDrawColor r $= SDL.V4 minBound minBound minBound maxBound
     t <- SDL.Image.loadTexture r "./assets/tanks_alpha.png"
+    SDL.textureBlendMode t $= SDL.BlendAlphaBlend
 
     let doRender = \game -> SDL.clear r >> drawGame r t game >> SDL.present r
     shouldExit <- newIORef False
