@@ -67,7 +67,7 @@ main = do
     _ <- readChan chan
     loop
   map <- newIORef Data.Map.empty
-  forkIO (runServer chan map (initialGameState (getBoard 25 25)))
+  forkIO (runServer chan map (initialGameState firstLevel))
   forkIO (readMoves chan map)
   mainLoop sock chan 1
 
