@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- Echo client program
+
 module Main where
 
 import qualified Control.Exception as E

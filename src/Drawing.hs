@@ -54,12 +54,20 @@ drawTank :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Tank -> m ()
 drawTank r t tank = do
   let (x, y) = tPosition tank
   drawObject r t (getTankRect tank) (fromIntegral x, fromIntegral y) 2
-  -- forM_ (tBullets tank) (drawBullet r t)
+  forM_ (tBullets tank) (drawBullet r t)
 
 
--- TODO: implement
 drawBullet :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Bullet -> m ()
-drawBullet = undefined
+drawBullet r t b = drawTexturePart r t rect dst
+  where
+    (x, y) = bPosition b
+    rect = getBulletRect b
+    (xOffset, yOffset) = case bDirection b of
+      UP -> (4, 0)
+      LEFT -> (0, -4)
+      DOWN -> (-4, 0)
+      RIGHT -> (0, 4)
+    dst = U.mkRect (tileSize * fromIntegral x + xOffset) (tileSize * fromIntegral y + yOffset) tileSize tileSize
 
 
 drawBonus :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Maybe (BonusItem, Position) -> m ()

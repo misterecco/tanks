@@ -87,7 +87,6 @@ data GameState = GameState
   , gEagle :: Eagle
   } deriving (Generic, Show, FromJSON, ToJSON)
 
-
 initialGameState :: Board -> GameState
 initialGameState board = GameState board tanks (Just (Helmet, (2, 2))) [] Alive
   where tanks = [newTank $ Human 0, newTank $ Human 1, newTank $ NPC 0, newTank $ NPC 1, newTank $ NPC 2]
@@ -109,7 +108,7 @@ newTank pl = case pl of
   Human i -> let
     (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
       in
-    Tank UP (x, 24) (0, 0) pl col Small [] []
+    Tank UP (x, 24) (0, 0) pl col Small [] [Bullet UP (x, 20) (0, 0)]
   NPC i -> let
     x = case i `mod` 3 of
       0 -> 0
@@ -122,10 +121,10 @@ barrelPosition :: Tank -> Position
 barrelPosition tank =
 	let (x, y) = tPosition tank in
 	case tDirection tank of
-		UP -> (x + 1, y)
-		DOWN -> (x + 1, y + 2)
+		UP -> (x, y)
+		DOWN -> (x + 1, y + 1)
 		LEFT -> (x, y + 1)
-		RIGHT -> (x + 2, y + 1)
+		RIGHT -> (x + 1, y)
 		
 tankOverlap :: Position -> Tank -> Bool
 tankOverlap (x, y) tank =
