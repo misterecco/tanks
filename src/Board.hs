@@ -33,35 +33,35 @@ instance Ord Player where
 	(<=) (NPC a) (NPC b) = a <= b
 
 data Color = Yellow | Green | Silver
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Size = Small | Medium | Large | Huge
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data TankBonus = Raft | Shield | Flashing
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data GeneralBonus = Bunker | Freeze
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data BonusItem = Helmet | Clock | Shovel | Star | Grenade | Life | Pistol | Boat
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Field = Bricks | Forest | Stone | Ice | Empty
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Dir = UP | DOWN | LEFT | RIGHT
-  deriving (Generic, Show, Eq, ToJSON, FromJSON)
+  deriving (Generic, Show, ToJSON, FromJSON, Eq)
 
 data Eagle = Alive | Dead
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 
 data Bullet = Bullet
   { bDirection :: Dir
   , bPosition :: Position
   , bVelocity :: Velocity
-  } deriving (Generic, Show, FromJSON, ToJSON)
+  } deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Tank = Tank
   { tDirection :: Dir
@@ -72,7 +72,7 @@ data Tank = Tank
   , tSize :: Size
   , tBonuses :: [TankBonus]
   , tBullets :: [Bullet]
-  } deriving (Generic, Show, FromJSON, ToJSON)
+  } deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Board = Board Int Int (Map (Int, Int) Field)
 	deriving (Generic, Show, FromJSON, ToJSON)
@@ -88,21 +88,6 @@ data GameState = GameState
   } deriving (Generic, Show, FromJSON, ToJSON)
 
 
-newTank :: Player -> Tank
-newTank pl = case pl of
-  Human i -> let
-    (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
-      in
-    Tank UP (x, 24) (0, 0) pl col Small [] []
-  NPC i -> let
-    x = case i `mod` 3 of
-      0 -> 0
-      1 -> 12
-      2 -> 24
-      in
-    Tank DOWN (x, 0) (0, 0) pl Green Small [] []
-
-
 initialGameState :: Board -> GameState
 initialGameState board = GameState board tanks (Just (Helmet, (2, 2))) [] Alive
   where tanks = [newTank $ Human 0, newTank $ Human 1, newTank $ NPC 0, newTank $ NPC 1, newTank $ NPC 2]
@@ -116,6 +101,36 @@ y_coeff = 67
 
 bounds :: Board -> ((Int, Int), (Int, Int))
 bounds (Board n m _ ) = ((0, 0), (n-1, m-1))
+
+-- TANK FUNCTIONS --
+
+newTank :: Player -> Tank
+newTank pl = case pl of
+  Human i -> let
+    (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
+      in
+    Tank UP (x, 24) (0, 0) pl col Small [] []
+  NPC i -> let
+    x = case i `mod` 3 of
+      0 -> 0
+      1 -> 12
+      2 -> 24
+      in
+    Tank DOWN (x, 0) (0, 0) pl Green Small [] []
+    
+barrelPosition :: Tank -> Position
+barrelPosition tank =
+	let (x, y) = tPosition tank in
+	case tDirection tank of
+		UP -> (x + 1, y)
+		DOWN -> (x + 1, y + 2)
+		LEFT -> (x, y + 1)
+		RIGHT -> (x + 2, y + 1)
+		
+tankOverlap :: Position -> Tank -> Bool
+tankOverlap (x, y) tank =
+	let (tx, ty) = tPosition tank in
+	((abs $ tx - x) <= 1) && ((abs $ ty - y) <= 1)
 
 -- FIELD FUNCTIONS --
 
@@ -142,17 +157,25 @@ canEnterField Ice = True
 canEnterField Empty = True
 
 -- DIR FUNCTIONS --
-moveByDir :: Position -> Dir -> Position
-moveByDir (x, y) UP = (x, y - 2)
-moveByDir (x, y) DOWN = (x, y + 2)
-moveByDir (x, y) RIGHT = (x + 2, y)
-moveByDir (x, y) LEFT = (x - 2, y)
+moveByDir :: Position -> Int -> Dir -> Position
+moveByDir (x, y) vel UP = (x, y - vel)
+moveByDir (x, y) vel DOWN = (x, y + vel)
+moveByDir (x, y) vel RIGHT = (x + vel, y)
+moveByDir (x, y) vel LEFT = (x - vel, y)
+
+-- BOARD FUNCTIONS --
 
 getBoard :: Int -> Int -> Board
 getBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), Empty) | j <- [0..n-1] ] | i <- [0..m-1]] )
 
 randomBoard :: Int -> Int -> Board
 randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField i j) | j <- [0..n-1] ] | i <- [0..m-1]] )
+
+-- GAMESTATE FUNCTIONS --
+
+getTanksByPosition :: GameState -> Position -> [Tank]
+getTanksByPosition gs pos = 
+	Data.List.filter (tankOverlap pos) (gTanks gs) 
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
 encodeGameState gs =  encode $ gs

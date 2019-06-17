@@ -68,10 +68,11 @@ addNewTank pl gs =
 
 moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
-	let newPos = moveByDir pos dir in
-	let maybeField = maybeGetField (gBoard gs) newPos in
+	let newPos = moveByDir pos 2 dir in
+	let maybeField = maybeGetField (gBoard gs) newPos  in
+	let tanks = getTanksByPosition gs newPos in
 	case maybeField of
-		Just field -> if canEnterField field then newPos else pos
+		Just field -> if tanks == [] && canEnterField field then newPos else pos
 		Nothing -> pos
 
 moveFieldTank :: GameState -> Tank -> Tank
@@ -102,6 +103,9 @@ moveTank gs pl dir (tank:xs) =
 		(tBonuses tank)
 		(tBullets tank)
 
+bulletVelocity ::Velocity
+bulletVelocity = (4, 0)
+
 shootTank :: Player -> [Tank] -> [Tank]
 shootTank _ [] = []
 shootTank pl (tank:xs) =
@@ -119,8 +123,8 @@ shootTank pl (tank:xs) =
 		(tBonuses tank)
 		((Bullet
 			(tDirection tank)
-			(tPosition tank)
-			(tVelocity tank)
+			(barrelPosition tank)
+			bulletVelocity
 		):(tBullets tank))
 
 updateTanks :: ([Tank] -> [Tank]) -> GameState -> GameState
