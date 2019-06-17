@@ -104,7 +104,7 @@ newTank pl = case pl of
 
 
 initialGameState :: Board -> GameState
-initialGameState board = GameState board tanks (Just (Helmet, (10, 10))) [] Alive
+initialGameState board = GameState board tanks (Just (Helmet, (2, 2))) [] Alive
   where tanks = [newTank $ Human 0, newTank $ Human 1, newTank $ NPC 0, newTank $ NPC 1, newTank $ NPC 2]
 
 

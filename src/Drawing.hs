@@ -45,8 +45,6 @@ drawObject r t p (x, y) s = do
 drawBoard :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Board -> m ()
 drawBoard r t board = do
   let (_,(n, m)) = bounds board
-  let boardPos = U.mkRect 16 16 ((fromIntegral (25+1)) * tileSize) ((fromIntegral (25+1)) * tileSize)
-  setViewport r boardPos
 
   forM_ [(i, j) | i <- [0..n], j <- [0..m]] $ \pos -> do
     drawObject r t (getFieldRect (getField board pos)) (toCIntPair pos) 1
@@ -77,6 +75,9 @@ drawEagle r t e =
 
 drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()
 drawGame r t g = do
+  let boardPos = U.mkRect 16 16 (26 * tileSize) (26 * tileSize)
+  setViewport r boardPos
+
   drawEagle r t (gEagle g)
   forM_ (gTanks g) (drawTank r t)
   drawBoard r t (gBoard g)
