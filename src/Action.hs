@@ -13,6 +13,8 @@ import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Generic)
 
+import Debug.Trace
+
 import Board
 
 data GameAction =
@@ -64,12 +66,32 @@ addNewTank pl gs =
     (gGeneralBonuses gs)
   (gEagle gs)
 
-moveTank :: Player -> Dir -> [Tank] -> [Tank]
-moveTank _ _ [] = []
-moveTank pl dir (tank:xs) =
+moveField :: GameState -> Dir -> Position -> Position
+moveField gs dir pos =
+	let newPos = moveByDir pos dir in
+	let maybeField = maybeGetField (gBoard gs) newPos in
+	case maybeField of
+		Just field -> if canEnterField field then newPos else pos
+		Nothing -> pos
+
+moveFieldTank :: GameState -> Tank -> Tank
+moveFieldTank gs tank =
+	Tank
+		(tDirection tank)
+		(traceShowId (moveField gs (tDirection tank) (tPosition tank)))
+		(tVelocity tank)
+		(tPlayer tank)
+		(tColor tank)
+		(tSize tank)
+		(tBonuses tank)
+		(tBullets tank)
+
+moveTank :: GameState -> Player -> Dir -> [Tank] -> [Tank]
+moveTank _ _ _ [] = []
+moveTank gs pl dir (tank:xs) =
 	if tPlayer tank == pl
-	then newTank:xs
-	else tank:(moveTank pl dir xs)
+	then (moveFieldTank gs newTank):xs
+	else tank:(moveTank gs pl dir xs)
 	where newTank =
 		Tank dir
 		(tPosition tank)
@@ -117,7 +139,7 @@ modifyMoves ((p, action):xs) gs =
 	let (ys, newGs) = modifyMoves xs newGS in ((p, NoAction):ys, newGs)
 	where newGS = case action of
 		NewPlayer -> addNewTank p gs
-		Move d -> updateTanks (moveTank p d) gs
+		Move d -> updateTanks (moveTank gs p d) gs
 		NoAction -> gs
 		Shoot -> updateTanks (shootTank p) gs
 

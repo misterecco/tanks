@@ -114,6 +114,11 @@ x_coeff = 17
 y_coeff :: Int
 y_coeff = 67
 
+bounds :: Board -> ((Int, Int), (Int, Int))
+bounds (Board n m _ ) = ((0, 0), (n-1, m-1))
+
+-- FIELD FUNCTIONS --
+
 randomField :: Int -> Int -> Field
 randomField i j =
     case ((i * 1000 + j) `xor` 8475845) `mod` 5 of
@@ -123,11 +128,25 @@ randomField i j =
         3 -> Ice
         _ -> Empty
 
-bounds :: Board -> ((Int, Int), (Int, Int))
-bounds (Board n m _ ) = ((0, 0), (n-1, m-1))
-
 getField :: Board -> (Int, Int) -> Field
 getField (Board _ _ mapa) pos = mapa ! pos
+
+maybeGetField :: Board -> (Int, Int) -> Maybe Field
+maybeGetField (Board _ _ mapa) pos = Data.Map.lookup pos mapa
+
+canEnterField :: Field -> Bool
+canEnterField Bricks = False 
+canEnterField Forest = True
+canEnterField Stone = False
+canEnterField Ice = True
+canEnterField Empty = True
+
+-- DIR FUNCTIONS --
+moveByDir :: Position -> Dir -> Position
+moveByDir (x, y) UP = (x, y - 2)
+moveByDir (x, y) DOWN = (x, y + 2)
+moveByDir (x, y) RIGHT = (x + 2, y)
+moveByDir (x, y) LEFT = (x - 2, y)
 
 getBoard :: Int -> Int -> Board
 getBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), Empty) | j <- [0..n-1] ] | i <- [0..m-1]] )

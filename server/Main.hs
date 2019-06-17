@@ -34,10 +34,10 @@ readMoves chan moves = do
 
 runServer :: Chan Msg -> IORef MovesMap -> GameState -> IO ()
 runServer chan moves gameState = do
-	newState <- updateGameState gameState moves
 	currMoves <- readIORef moves
+	newState <- updateGameState gameState moves
 	writeChan chan (SendGameState newState)
-	IO.putStrLn $ show newState
+--	IO.putStrLn $ show newState
 	IO.putStrLn $ show currMoves
 	-- wait 1s
 	threadDelay 1000000
@@ -54,7 +54,7 @@ main = do
     _ <- readChan chan
     loop
   map <- newIORef Data.Map.empty
-  forkIO (runServer chan map (initialGameState (getBoard 5 5)))
+  forkIO (runServer chan map (initialGameState (getBoard 25 25)))
   forkIO (readMoves chan map)
   mainLoop sock chan 1
 
