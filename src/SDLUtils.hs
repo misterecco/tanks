@@ -32,7 +32,7 @@ withWindow title (x, y) op = do
   SDL.destroyWindow w
 
     where
-      p = SDL.defaultWindow { SDL.windowInitialSize = z }
+      p = SDL.defaultWindow { SDL.windowInitialSize = z, SDL.windowHighDPI = True }
       z = SDL.V2 (fromIntegral x) (fromIntegral y)
 
 
@@ -90,3 +90,8 @@ mkRect x y w h = SDL.Rectangle o z
   where
     o = SDL.P (SDL.V2 x y)
     z = SDL.V2 w h
+
+
+scaleRect :: Num a => a -> SDL.Rectangle a -> SDL.Rectangle a
+scaleRect s (SDL.Rectangle (SDL.P (SDL.V2 x y)) (SDL.V2 w h)) =
+  mkRect (x * s) (y * s) (w * s) (h * s)

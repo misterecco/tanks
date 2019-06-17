@@ -17,6 +17,9 @@ import Board
 import Texturing
 import qualified SDLUtils as U
 
+scaleFactor :: CInt
+scaleFactor = 3
+
 
 drawTexture :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> m ()
 drawTexture r t = SDL.copy r t Nothing Nothing
@@ -33,7 +36,7 @@ toCIntPair (x, y) = (fromIntegral x, fromIntegral y)
 
 
 drawTexturePart :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> SDL.Rectangle CInt -> SDL.Rectangle CInt -> m ()
-drawTexturePart r t ps pd = SDL.copy r t (Just ps) (Just pd)
+drawTexturePart r t ps pd = SDL.copy r t (Just ps) (Just (U.scaleRect scaleFactor pd))
 
 
 drawObject :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> SDL.Rectangle CInt -> (CInt, CInt) -> CInt -> m ()
@@ -93,4 +96,4 @@ drawGame r t g = do
 
 
 setViewport :: (MonadIO m) => SDL.Renderer -> SDL.Rectangle CInt -> m ()
-setViewport r s = SDL.rendererViewport r $= Just s
+setViewport r s = SDL.rendererViewport r $= Just (U.scaleRect scaleFactor s)

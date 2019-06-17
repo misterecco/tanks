@@ -29,7 +29,7 @@ import Drawing
 
 
 main :: IO ()
-main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (640, 480) $
+main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
   \w -> U.withRenderer w $ \r -> do
 
     SDL.rendererDrawColor r $= SDL.V4 minBound minBound minBound maxBound
