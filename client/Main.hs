@@ -15,10 +15,12 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString as BS
 import Data.ByteString.Lazy.Char8 as BSL
 import Data.Binary
+import Data.IORef
 import Foreign.C.Types (CInt)
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import SDL (($=))
+import System.Exit
 import System.IO as Sys
 
 import Board
@@ -29,13 +31,15 @@ import Drawing
 main :: IO ()
 main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (640, 480) $
   \w -> U.withRenderer w $ \r -> do
+
     SDL.rendererDrawColor r $= SDL.V4 minBound minBound minBound maxBound
     t <- SDL.Image.loadTexture r "./assets/tanks_alpha.png"
 
     let doRender = \game -> SDL.clear r >> drawGame r t game >> SDL.present r
+    shouldExit <- newIORef False
 
     addr <- resolve "127.0.0.1" "4242"
-    E.bracket (open addr) close (talkSock doRender)
+    E.bracket (open addr) close (talkSock doRender shouldExit )
 
     SDL.destroyTexture t
 
@@ -50,25 +54,28 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (640, 480) $
         connect sock $ addrAddress addr
         return sock
 
-    talkSock doRender sock = do
+    talkSock doRender shouldExit sock = do
         hdl <- socketToHandle sock ReadWriteMode
         BSL.hPutStrLn hdl (encodeGameAction NewPlayer)
-        forkIO $ talk hdl
-        readStream hdl doRender
+        forkIO $ talk hdl shouldExit
+        readStream hdl doRender shouldExit
 
-    talk hdl = do
+    talk hdl shouldExit = do
         fix $ \loop -> do
             e <- SDL.eventPayload <$> SDL.waitEvent
             -- print $ "Last event was: " ++ show e
             when (isAction e) $ BSL.hPutStrLn hdl (encodeGameAction (toAction e))
             case e of
-                SDL.QuitEvent -> Sys.putStrLn "OK, quit"
+                SDL.QuitEvent -> do
+                    Sys.putStrLn "OK, quit"
+                    writeIORef shouldExit True
                 _ -> loop
 
-    readStream hdl doRender = do
+    readStream hdl doRender shouldExit = do
         msg <- BS.hGetLine hdl
         Sys.putStr "Received: "
         let game = decodeGameState msg
         Sys.putStrLn $ show (game)
         doRender game
-        readStream hdl doRender
+        se <- readIORef shouldExit
+        unless se $ readStream hdl doRender shouldExit
