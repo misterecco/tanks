@@ -43,12 +43,25 @@ runServer chan moves gameState = do
 	threadDelay 250000
 	runServer chan moves newState
 
+resolve :: String -> IO AddrInfo
+resolve port = do
+	let hints = defaultHints {
+			addrFlags = [AI_PASSIVE]
+		  , addrSocketType = Stream
+		  }
+	addr:_ <- getAddrInfo (Just hints) Nothing (Just port)
+	return addr
+
 main :: IO ()
 main = do
-  sock <- socket AF_INET Stream 0
+  addr <- resolve "4242"
+  sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
   setSocketOption sock ReuseAddr 1
-  bind sock (SockAddrInet 4242 (tupleToHostAddress (127,0,0,1)))
-  listen sock 2
+  -- If the prefork technique is not used,
+  -- set CloseOnExec for the security reasons.
+  let fd = fdSocket sock in setCloseOnExecIfNeeded fd
+  bind sock (addrAddress addr)
+  listen sock 10
   chan <- newChan
   _ <- forkIO $ fix $ \loop -> do
     _ <- readChan chan

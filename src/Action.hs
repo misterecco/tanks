@@ -4,6 +4,7 @@
 module Action where
 
 import qualified SDL
+import qualified Data.List as List
 
 import Data.Aeson
 
@@ -147,12 +148,27 @@ modifyMoves ((p, action):xs) gs =
 		NoAction -> gs
 		Shoot -> updateTanks (shootTank p) gs
 
+moveBullet :: Player ->  Bullet -> GameState -> GameState
+moveBullet pl bullet gs = gs
+
+moveBulletsTank :: Tank -> GameState -> GameState
+moveBulletsTank tank gs =
+	List.foldr (moveBullet (tPlayer tank)) gs (tBullets tank)
+
+moveBulletsTanks :: GameState -> [Tank] -> GameState
+moveBulletsTanks = List.foldr moveBulletsTank
+
+moveBullets :: GameState -> GameState
+moveBullets gs = moveBulletsTanks gs (gTanks gs)
+
 updateGameState :: GameState -> IORef MovesMap -> IO GameState
 updateGameState gs movesMap = do {
 	moves <- readIORef movesMap;
-	let (newMoves, newGameState) = modifyMoves (Data.Map.toList moves) gs in do {
+	let (newMoves, newGameState) = modifyMoves (Data.Map.toList moves) gs in
+	let finalGameState = moveBullets newGameState in
+	do {
 		writeIORef movesMap (Data.Map.fromList newMoves);
-		return newGameState;
+		return finalGameState;
 	}
 }
 
