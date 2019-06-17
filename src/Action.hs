@@ -181,7 +181,7 @@ moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
 moveBulletsList [] gs = ([], gs)
 moveBulletsList (x:xs) gs = 
 	let (y, newgs) = moveBullet x gs in
-	let (ys, lastgs) = moveBulletsList ys newgs in
+	let (ys, lastgs) = moveBulletsList xs newgs in
 	case y of
 		Just b -> (b:ys, lastgs)
 		Nothing -> (ys, lastgs)
@@ -195,14 +195,14 @@ moveBulletsTanks :: GameState -> [Tank] -> ([Tank], GameState)
 moveBulletsTanks gs [] = ([], gs)
 moveBulletsTanks gs (x:xs) =
 	let (y, newgs) = moveBulletsTank x gs in
-	let (ys, lastgs) = moveBulletsTanks newgs ys in
+	let (ys, lastgs) = moveBulletsTanks newgs xs in
 	(y:ys, lastgs) 
 
 moveBullets :: GameState -> GameState
 moveBullets gs =
 	let (tanks, gameState) = moveBulletsTanks gs (gTanks gs)
 	in
-	gameState
+	updateTanks (\_ -> tanks) gameState
 
 updateGameState :: GameState -> IORef MovesMap -> IO GameState
 updateGameState gs movesMap = do {
