@@ -225,8 +225,8 @@ randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField
 
 -- GAMESTATE FUNCTIONS --
 
-getTanksByPosition :: GameState -> Position -> [Tank]
-getTanksByPosition gs pos =
+getTanksByTankPosition :: GameState -> Position -> [Tank]
+getTanksByTankPosition gs pos =
 	Data.List.filter (tankOverlap pos) (gTanks gs)
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString

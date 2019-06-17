@@ -72,7 +72,7 @@ moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
 	let newPos = moveByDir pos 1 dir in
 	let maybeField = maybeGetField (gBoard gs) newPos  in
-	let tanks = getTanksByPosition gs newPos in
+	let tanks = getTanksByTankPosition gs newPos in
 	case maybeField of
 		Just field -> if length tanks == 1 && canEnterField field then newPos else pos
 		Nothing -> pos
@@ -168,7 +168,7 @@ moveBullet bullet gs =
 	let player = bPlayer bullet in
 	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in
 	let maybeField = maybeGetField (gBoard gs) newPos  in
-	let tanks = getTanksByPosition gs newPos in
+	let tanks = getTanksByTankPosition gs newPos in
 	let newGameState = updateTanks (List.filter (\tank ->
 		sameTeam player (tPlayer tank) ||
 		not (tankOverlap newPos tank)
@@ -214,7 +214,7 @@ updateGameState :: GameState -> IORef MovesMap -> IO GameState
 updateGameState gs movesMap = do {
 	moves <- readIORef movesMap;
 	let (newMoves, newGameState) = modifyMoves (Data.Map.toList moves) gs in
-	let finalGameState = moveBullets newGameState in
+	let finalGameState = moveBullets (moveBullets newGameState) in
 	do {
 		writeIORef movesMap (Data.Map.fromList newMoves);
 		return finalGameState;
