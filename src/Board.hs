@@ -11,7 +11,7 @@ import Data.Binary
 import Data.Bits
 import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
-import GHC.Generics (Rep, Generic)
+import GHC.Generics (Generic)
 
 
 type Position = (Int, Int)
@@ -41,7 +41,7 @@ data Field = Bricks | Forest | Stone | Ice | Empty
   deriving (Binary, Generic, Show)
 
 data Dir = UP | DOWN | LEFT | RIGHT
-  deriving (Binary, Generic, Show)
+  deriving (Binary, Generic, Show, Eq)
 
 data Eagle = Alive | Dead
   deriving (Binary, Generic, Show)

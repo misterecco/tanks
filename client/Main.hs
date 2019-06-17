@@ -12,9 +12,10 @@ import Graphics.Vty.Config
 import Control.Monad
 import Control.Monad.Fix
 import Data.ByteString as BS
-import Data.ByteString.Lazy
+import Data.ByteString.Lazy.Char8 as BSL
 import Data.Binary
 import Board
+import Action
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -31,7 +32,6 @@ main = withSocketsDo $ do
         return sock
     talkSock sock = do
         hdl <- socketToHandle sock ReadWriteMode
-        Sys.hPutStrLn hdl "Player 1"
         forkIO (readStream hdl)
         talk hdl
     	
@@ -41,16 +41,14 @@ main = withSocketsDo $ do
         fix $ \loop -> do
             e <- nextEvent vty
             print $ "Last event was: " ++ show e
+            if isAction e then BSL.hPutStrLn hdl (encodeGameAction (toAction e)) else return ()
             case e of
-                EvKey KLeft _ -> Sys.hPutStrLn hdl "LEFT" >> loop
-                EvKey KRight _ -> Sys.hPutStrLn hdl "RIGHT" >> loop
-                EvKey KUp _ -> Sys.hPutStrLn hdl "UP" >> loop
-                EvKey KDown _ -> Sys.hPutStrLn hdl "DOWN" >> loop
                 EvKey (KChar 'c') [MCtrl] -> Graphics.Vty.shutdown vty >> Sys.putStrLn "OK, quit"
                 _ -> loop
       		 
     readStream hdl = do
 		msg <- BS.hGetLine hdl
 		Sys.putStr "Received: "
-		Sys.putStrLn $ show (decodeGameState msg)
+		BS.putStrLn $ msg
+--		Sys.putStrLn $ show (decodeGameState msg)
 		readStream hdl

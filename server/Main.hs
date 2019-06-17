@@ -8,22 +8,19 @@ import Control.Monad (when)
 import Control.Monad.Fix (fix)
 import Data.IORef
 import Data.Map
-import Data.ByteString.Lazy.Char8 as BS
+import Data.ByteString.Lazy.Char8 as BSL
+import Data.ByteString as BS
 import Data.Binary
 import Board
-
-data GameAction =
-      Move Dir
-    | SHOOT
-    deriving Show
+import Action
 
 -- Change to Move Int GameAction
 data GameEvent =
-      Action Int String
+      Action Int GameAction
     | SendGameState GameState
 
 type Msg = GameEvent
-type MovesMap = Map Int String
+type MovesMap = Map Int GameAction
 
 readMoves :: Chan Msg -> IORef MovesMap -> IO ()
 readMoves chan moves = do
@@ -31,7 +28,7 @@ readMoves chan moves = do
     case e of
         Action senderNum action -> do {
             modifyIORef moves (insert senderNum action);
-            IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ action
+            IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ (show action)
         }
         _ -> return ()
     readMoves chan moves
@@ -68,12 +65,9 @@ mainLoop sock chan msgNum = do
 
 runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
 runConn (sock, _) chan playerNum = do
-    let broadcast msg = writeChan chan (Action playerNum msg)
+    let broadcast msg = writeChan chan (Action playerNum (decodeGameAction msg))
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
-
-    name <- IO.hGetLine hdl
-    broadcast ("--> " ++ name ++ " entered the game.")
 
     commLine <- dupChan chan
 
@@ -81,20 +75,17 @@ runConn (sock, _) chan playerNum = do
     reader <- forkIO $ fix $ \loop -> do
         e <- readChan commLine
         case e of
-            SendGameState gameState -> BS.hPutStrLn hdl ((encodeGameState gameState))
+            SendGameState gameState -> BSL.hPutStrLn hdl ((encodeGameState gameState))
+            SendGameState gameState -> BSL.hPutStrLn hdl $ BSL.fromString "Dum dum dum"
             _ -> return ()
         loop
 
     handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
-        line <- IO.hGetLine hdl
-        case line of
-             -- If an exception is caught, send a message and break the loop
-             "quit" -> IO.hPutStrLn hdl "Bye!"
-             -- else, continue looping.
-             _      -> broadcast line >> loop
+        line <- BS.hGetLine hdl
+        broadcast line
+        loop
 
     killThread reader                      -- kill after the loop ends
-    broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
     hClose hdl                             -- close the handle
 
 
