@@ -37,7 +37,7 @@ runServer chan moves gameState = do
 	currMoves <- readIORef moves
 	newState <- updateGameState gameState moves
 	writeChan chan (SendGameState newState)
-	IO.putStrLn $ show newState
+--	IO.putStrLn $ show newState
 	IO.putStrLn $ show currMoves
 	-- wait 0.25s
 	threadDelay 250000

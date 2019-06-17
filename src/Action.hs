@@ -8,6 +8,7 @@ import qualified Data.List as List
 
 import Data.Aeson
 
+import Data.Maybe
 import Data.Map
 import Data.IORef
 import Data.ByteString as BS (ByteString)
@@ -175,7 +176,9 @@ moveBullet bullet gs =
 	in
 	-- destroy bricks
 	-- move Bullet
-	(Just $ Bullet (bDirection bullet) newPos (bVelocity bullet) (bPlayer bullet), newGameState)
+	if List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
+	then (Nothing, newGameState)
+	else (Just $ Bullet (bDirection bullet) newPos (bVelocity bullet) (bPlayer bullet), newGameState)
 
 moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
 moveBulletsList [] gs = ([], gs)
@@ -202,7 +205,10 @@ moveBullets :: GameState -> GameState
 moveBullets gs =
 	let (tanks, gameState) = moveBulletsTanks gs (gTanks gs)
 	in
-	updateTanks (\_ -> tanks) gameState
+	updateTanks (\gsTanks -> List.filter (\tank ->
+			isJust $ List.find ((== (tPlayer tank)) . tPlayer) gsTanks)
+		tanks
+	) gameState
 
 updateGameState :: GameState -> IORef MovesMap -> IO GameState
 updateGameState gs movesMap = do {

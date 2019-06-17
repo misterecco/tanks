@@ -75,7 +75,7 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
         msg <- BS.hGetLine hdl
         Sys.putStr "Received: "
         let game = decodeGameState msg
-        Sys.putStrLn $ show (game)
+ --       Sys.putStrLn $ show (game)
         doRender game
         se <- readIORef shouldExit
         unless se $ readStream hdl doRender shouldExit
