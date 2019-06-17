@@ -66,3 +66,12 @@ getBonusRect b = case b of
   Boat -> toRect 368 80 -- unfortunately, this texture is missing
   where
     toRect x y = U.mkRect x y (2 * tileSize) (2 * tileSize)
+
+getBulletRect :: Bullet -> SDL.Rectangle CInt
+getBulletRect b = case bDirection b of
+  UP -> toRect 320 100
+  LEFT -> toRect 328 100
+  DOWN -> toRect 336 100
+  RIGHT -> toRect 344 100
+  where
+    toRect x y = U.mkRect x y tileSize tileSize

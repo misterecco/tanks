@@ -93,7 +93,7 @@ newTank pl = case pl of
   Human i -> let
     (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
       in
-    Tank UP (x, 24) (0, 0) pl col Small [] []
+    Tank UP (x, 24) (0, 0) pl col Small [] [Bullet UP (x, 20) (0, 0)]
   NPC i -> let
     x = case i `mod` 3 of
       0 -> 0
