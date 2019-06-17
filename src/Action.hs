@@ -126,7 +126,20 @@ shootTank pl (tank:xs) =
 			(tDirection tank)
 			(barrelPosition tank)
 			bulletVelocity
+			(tPlayer tank)
 		):(tBullets tank))
+
+updateBullets :: Tank -> [Bullet] -> Tank
+updateBullets tank bullets =
+    Tank
+	(tDirection tank)
+	(tPosition tank)
+	(tVelocity tank)
+	(tPlayer tank)
+	(tColor tank)
+	(tSize tank)
+	(tBonuses tank)
+	bullets
 
 updateTanks :: ([Tank] -> [Tank]) -> GameState -> GameState
 updateTanks f gs =
@@ -148,18 +161,48 @@ modifyMoves ((p, action):xs) gs =
 		NoAction -> gs
 		Shoot -> updateTanks (shootTank p) gs
 
-moveBullet :: Player ->  Bullet -> GameState -> GameState
-moveBullet pl bullet gs = gs
+moveBullet :: Bullet -> GameState -> (Maybe Bullet, GameState)
+moveBullet bullet gs = 
+	-- kill tanks
+	let player = bPlayer bullet in
+	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in
+	let maybeField = maybeGetField (gBoard gs) newPos  in
+	let tanks = getTanksByPosition gs newPos in
+	let newGameState = updateTanks (List.filter (\tank ->
+		sameTeam player (tPlayer tank) ||
+		not (tankOverlap newPos tank)
+		)) gs
+	in
+	-- destroy bricks
+	-- move Bullet
+	(Just $ Bullet (bDirection bullet) newPos (bVelocity bullet) (bPlayer bullet), newGameState)
 
-moveBulletsTank :: Tank -> GameState -> GameState
+moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
+moveBulletsList [] gs = ([], gs)
+moveBulletsList (x:xs) gs = 
+	let (y, newgs) = moveBullet x gs in
+	let (ys, lastgs) = moveBulletsList ys newgs in
+	case y of
+		Just b -> (b:ys, lastgs)
+		Nothing -> (ys, lastgs)
+
+moveBulletsTank :: Tank -> GameState -> (Tank, GameState)
 moveBulletsTank tank gs =
-	List.foldr (moveBullet (tPlayer tank)) gs (tBullets tank)
+	let (bullets, newgs) = moveBulletsList (tBullets tank) gs in
+	(updateBullets tank bullets, newgs)
 
-moveBulletsTanks :: GameState -> [Tank] -> GameState
-moveBulletsTanks = List.foldr moveBulletsTank
+moveBulletsTanks :: GameState -> [Tank] -> ([Tank], GameState)
+moveBulletsTanks gs [] = ([], gs)
+moveBulletsTanks gs (x:xs) =
+	let (y, newgs) = moveBulletsTank x gs in
+	let (ys, lastgs) = moveBulletsTanks newgs ys in
+	(y:ys, lastgs) 
 
 moveBullets :: GameState -> GameState
-moveBullets gs = moveBulletsTanks gs (gTanks gs)
+moveBullets gs =
+	let (tanks, gameState) = moveBulletsTanks gs (gTanks gs)
+	in
+	gameState
 
 updateGameState :: GameState -> IORef MovesMap -> IO GameState
 updateGameState gs movesMap = do {

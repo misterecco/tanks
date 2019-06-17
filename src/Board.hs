@@ -61,6 +61,7 @@ data Bullet = Bullet
   { bDirection :: Dir
   , bPosition :: Position
   , bVelocity :: Velocity
+  , bPlayer :: Player
   } deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Tank = Tank
@@ -101,6 +102,13 @@ y_coeff = 67
 bounds :: Board -> ((Int, Int), (Int, Int))
 bounds (Board n m _ ) = ((0, 0), (n-1, m-1))
 
+-- PLAYER FUNCTIONS --
+
+sameTeam :: Player -> Player -> Bool
+sameTeam (Human _) (Human _) = True
+sameTeam (NPC _) (NPC _) = True
+sameTeam _ _ = False
+
 -- TANK FUNCTIONS --
 
 newTank :: Player -> Tank
@@ -108,7 +116,7 @@ newTank pl = case pl of
   Human i -> let
     (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
       in
-    Tank UP (x, 24) (0, 0) pl col Small [] [Bullet UP (x, 20) (0, 0)]
+    Tank UP (x, 24) (0, 0) pl col Small [] [Bullet UP (x, 20) (0, 0) pl]
   NPC i -> let
     x = case i `mod` 3 of
       0 -> 0
