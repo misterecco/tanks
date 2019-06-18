@@ -127,7 +127,7 @@ isHuman (NPC _) = False
 
 newPlayerTank :: Int -> Tank
 newPlayerTank i =
-    let (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
+    let (x, col) = if i `mod` 2 == 0 then (8, Green) else (16, Green)
       in
     Tank UP (x, 24) (0, 0) (Human i) col Small [] [] Working
 
