@@ -105,7 +105,7 @@ drawLives r t livesMap = do
 
   where
     drawLive (Human pid, lives) = do
-      drawObject r t (getDigitRect pid) (0, fromIntegral pid * 2) 1
+      drawObject r t (getDigitRect (pid + 1)) (0, fromIntegral pid * 2) 1
       drawObject r t (getDigitRect lives) (2, fromIntegral pid * 2) 1
     drawLive (_, _) = return ()
 
