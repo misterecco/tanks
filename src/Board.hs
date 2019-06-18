@@ -26,7 +26,7 @@ type Velocity = (Int, Int)
 
 -- Human and NPC tanks have different shapes
 data Player = Human Int | NPC Int
-  deriving (Generic, Show, FromJSON, ToJSON, Eq)
+  deriving (Generic, Show, FromJSON, ToJSON, Eq, FromJSONKey, ToJSONKey)
 
 instance Ord Player where
 	(<=) (Human _) (NPC _) = True
@@ -92,12 +92,13 @@ data GameState = GameState
   , gGeneralBonuses :: [(GeneralBonus, Int)]
   , gEagle :: Eagle
   , gPoints :: Int
+  , gLives :: Map Player Int
   } deriving (Generic, Show, FromJSON, ToJSON)
 
 type GameStateM a = State GameState a
 
 initialGameState :: Board -> GameState
-initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive 0
+initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive 0 Data.Map.empty
 
 eaglePosition :: Position
 eaglePosition = (12, 24)

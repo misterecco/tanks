@@ -37,6 +37,7 @@ dependencies:
 - mtl
 - random
 - utility-ht
+- synchronous-channels >= 0.2 && < 1
 
 library:
   source-dirs: src

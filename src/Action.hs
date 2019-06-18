@@ -26,6 +26,8 @@ data GameAction =
       Move Dir
     | Shoot
     | NewPlayer Int
+    | DestroyPlayer
+    | GiveLives Int
     | NoAction
     | InvalidAction
   deriving (Generic, Show, Eq, FromJSON, ToJSON)
@@ -205,6 +207,12 @@ modifyMove p NoAction = return ()
 modifyMove p Shoot = do
   _ <- updateTanks (shootTank p)
   return ()
+modifyMove p (GiveLives x) = do
+  gs <- get;
+  put $ gs { gLives = Data.Map.insert p x $ gLives gs }
+modifyMove p DestroyPlayer = do
+  _ <- updateTanks (List.filter (\tank -> tPlayer tank /= p))
+  return ()
 
 modifyMoves :: [(Player, GameAction)] -> GameStateM ()
 modifyMoves [] = return ()
@@ -279,10 +287,10 @@ filterDestroyed = do
   _ <- updateTanks (List.filter (\t -> tStatus t == Working))
   return ()
 
-updateGameState :: MovesMap -> GameStateM ()
+updateGameState :: [(Player, GameAction)] -> GameStateM ()
 updateGameState moves = do
   filterDestroyed
-  modifyMoves (Data.Map.toList moves)
+  modifyMoves moves
   moveBullets
   moveBullets
 
