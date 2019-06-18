@@ -41,13 +41,13 @@ runServer chan moves gameState = do
 	if gEagle gameState == Dead
 		then runServer chan moves gameState
 		else let (_, newState) = runState (updateGameState currMoves) gameState in do
-			writeIORef moves Data.Map.empty;
-			writeChan chan (SendGameState newState);
-			--  	IO.putStrLn $ show newState;
+			writeIORef moves Data.Map.empty
+			writeChan chan (SendGameState newState)
+			--  	IO.putStrLn $ show newState
 			-- wait 0.25s
 			forkIO (makeNPCMoves chan newState)
-			threadDelay 250000;
-			runServer chan moves newState;
+			threadDelay 250000
+			runServer chan moves newState
 
 
 
