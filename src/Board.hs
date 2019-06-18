@@ -190,7 +190,7 @@ getFieldsByTank (Board _ _ mapa) pos =
     elems $ Data.Map.filterWithKey (\k -> \v -> tankOverlapField k pos) mapa
 
 getField :: Board -> (Int, Int) -> Field
-getField (Board _ _ mapa) pos = 
+getField (Board _ _ mapa) pos =
 	case Data.Map.lookup pos mapa of
 		Just x -> x
 		Nothing -> traceShow pos Empty

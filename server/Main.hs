@@ -2,6 +2,7 @@ module Main where
 
 import Network.Socket
 import System.IO as IO
+import System.Random
 import Control.Exception
 import Control.Concurrent
 import Control.Monad (when)
@@ -52,6 +53,13 @@ resolve port = do
 	addr:_ <- getAddrInfo (Just hints) Nothing (Just port)
 	return addr
 
+addNPCs :: Chan Msg -> Int -> IO ()
+addNPCs chan i = do
+  r <- abs <$> randomIO
+  writeChan chan (Action (NPC i) (NewPlayer r))
+  threadDelay 1000000
+  addNPCs chan (i + 1)
+
 main :: IO ()
 main = do
   addr <- resolve "4242"
@@ -66,6 +74,7 @@ main = do
   map <- newIORef Data.Map.empty
   forkIO (runServer chan map (initialGameState firstLevel))
   forkIO (readMoves chan map)
+  forkIO (addNPCs chan 0)
   mainLoop sock chan 0
 
 mainLoop :: Socket -> Chan Msg -> Int -> IO ()
@@ -81,7 +90,7 @@ runConn (sock, _) chan playerNum = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
-    writeChan chan (Action (Human playerNum) NewPlayer)
+    writeChan chan (Action (Human playerNum) (NewPlayer 0))
 
     commLine <- dupChan chan
 
