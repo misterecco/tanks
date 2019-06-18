@@ -202,16 +202,19 @@ moveBullet bullet =
 	let player = bPlayer bullet in
 	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in do {
 	tanks <- getTanksByBulletPosition newPos;
-	updateTanks $ List.filter (\tank ->
-		sameTeam player (tPlayer tank) ||
-		not (tankOverlap newPos tank)
+	updateTanks $ Data.Maybe.mapMaybe (\tank ->
+		if sameTeam player (tPlayer tank) || not (tankOverlap newPos tank)
+		then Just tank
+		else case traceShowId $ nextColor (tColor tank) of
+		  Nothing -> Nothing
+		  Just col -> Just $ tank { tColor = col }
 		);
 	-- destroy bricks
 	gs <- get;
 	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
 	updateFields $ mapWithKey
 		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty);
-	-- TODO destroy Bullets
+	-- destroy Bullets
 	destroyed <- updateDestroyBullets bullet $ bullet {bPosition = newPos};
 	-- destroy eagle
 	checkEagleBullet $ bullet {bPosition = newPos};
@@ -240,21 +243,17 @@ moveBulletsTank tank = do
 	bullets <- moveBulletsList (tBullets tank)
 	return $ updateBullets tank bullets
 
-moveBulletsTanks :: [Tank] -> GameStateM [Tank]
-moveBulletsTanks [] = return []
+moveBulletsTanks :: [Tank] -> GameStateM ()
+moveBulletsTanks [] = return ()
 moveBulletsTanks (x:xs) = do
-	y <- moveBulletsTank x
-	ys <- moveBulletsTanks xs
-	return $ y:ys
+	tank <- moveBulletsTank x
+	updateTanks $ List.map (\gsTank -> if tPlayer gsTank == tPlayer tank then tank else gsTank)
+	moveBulletsTanks xs
 
 moveBullets :: GameStateM ()
 moveBullets = do
   gs <- get
-  tanks <- moveBulletsTanks (gTanks gs)
-  updateTanks (\gsTanks -> List.filter (\tank ->
-			isJust $ List.find ((== (tPlayer tank)) . tPlayer) gsTanks)
-		tanks
-	)
+  moveBulletsTanks (gTanks gs)
 
 updateGameState :: MovesMap -> GameStateM ()
 updateGameState moves = do

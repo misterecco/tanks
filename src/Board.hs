@@ -159,7 +159,14 @@ tankOverlapBullet (x, y) tank =
 	let (tx, ty) = tPosition tank in
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 
--- BULLET FUNCTIONS
+-- COLOR FUNCTIONS --
+
+nextColor :: Color -> Maybe Color
+nextColor Green = Just Yellow
+nextColor Yellow = Just Silver
+nextColor Silver = Nothing
+
+-- BULLET FUNCTIONS --
 
 bulletPositions :: Bullet -> [Position]
 bulletPositions bullet =

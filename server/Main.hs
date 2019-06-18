@@ -29,7 +29,7 @@ readMoves chan moves = do
     case e of
         Action senderNum action -> do {
             modifyIORef moves (updateMovesMap senderNum action);
-            IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ (show action)
+--            IO.putStrLn $ "Read from " ++ (show senderNum) ++ ": " ++ (show action)
         }
         _ -> return ()
     readMoves chan moves
