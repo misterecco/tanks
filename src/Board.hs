@@ -83,8 +83,6 @@ data Tank = Tank
 data Board = Board Int Int (Map (Int, Int) Field)
 	deriving (Generic, Show, FromJSON, ToJSON)
 
--- TODO: [Tank] ==> (Map PlayerId Tank) ??
--- TODO: lives, points, enemies left, board number
 data GameState = GameState
   { gBoard :: Board
   , gTanks :: [Tank]

@@ -99,6 +99,16 @@ drawScore r t s p = do
   drawObject r t (getDigitRect d) (fromIntegral p, 0) 1
   unless (ns == 0) $ drawScore r t ns (p-1)
 
+drawLives :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> (Map.Map Player Int) -> m ()
+drawLives r t livesMap = do
+  forM_ (Map.toAscList livesMap) drawLive
+
+  where
+    drawLive (Human pid, lives) = do
+      drawObject r t (getDigitRect pid) (0, fromIntegral pid * 2) 1
+      drawObject r t (getDigitRect lives) (2, fromIntegral pid * 2) 1
+    drawLive (_, _) = return ()
+
 
 drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()
 drawGame r t g = do
@@ -114,6 +124,10 @@ drawGame r t g = do
   let scorePos = U.mkRect (30 * tileSize) (2 * tileSize) (8 * tileSize) tileSize
   setViewport r scorePos
   drawScore r t (gPoints g) 7
+
+  let livesPos = U.mkRect (30 * tileSize) (4 * tileSize) (3 * tileSize) (19 * tileSize)
+  setViewport r livesPos
+  drawLives r t (gLives g)
 
 
 setViewport :: (MonadIO m) => SDL.Renderer -> SDL.Rectangle CInt -> m ()

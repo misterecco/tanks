@@ -41,7 +41,6 @@ getTankRect t = let
     Yellow -> (0, 0)
     Green -> (0, 128)
     Silver -> (128, 0)
-  -- TODO: animation
   toRect x y = U.mkRect x y (2 * tileSize) (2 * tileSize)
     in
   if tStatus t == Destroyed
