@@ -103,7 +103,9 @@ moveTank :: GameState -> Player -> Dir -> [Tank] -> [Tank]
 moveTank _ _ _ [] = []
 moveTank gs pl dir (tank:xs) =
 	if tPlayer tank == pl
-	then moveFieldTank gs (tank { tDirection = dir }) : xs
+	then if tDirection tank == dir
+	  then moveFieldTank gs tank : xs
+	  else tank { tDirection = dir } : xs
 	else tank : moveTank gs pl dir xs
 
 bulletVelocity ::Velocity
