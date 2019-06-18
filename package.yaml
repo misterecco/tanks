@@ -35,6 +35,7 @@ dependencies:
 - extra
 - aeson
 - mtl
+- random
 
 library:
   source-dirs: src

@@ -24,7 +24,7 @@ import Board
 data GameAction =
       Move Dir
     | Shoot
-    | NewPlayer
+    | NewPlayer Int
     | NoAction
     | InvalidAction
   deriving (Generic, Show, Eq, FromJSON, ToJSON)
@@ -58,20 +58,34 @@ updateMovesMap :: Player -> GameAction -> MovesMap -> MovesMap
 updateMovesMap player gameAction movesMap =
 	Data.Map.alter f player movesMap where
 	f Nothing = Just gameAction
-	f (Just NewPlayer) = Just NewPlayer
+	f (Just (NewPlayer r)) = Just (NewPlayer r)
 	f (Just _) = Just gameAction
 
-newTankPos :: Player -> Tank
-newTankPos (Human pid) = newPlayerTank pid
--- TODO: randomness, make sure the field is available
-newTankPos (NPC pid) = newNPCTank pid 0 0
+addNewTank :: Player -> Int -> GameStateM ()
+addNewTank pl r = case pl of
+  (Human pid) -> do
+    gs <- get;
+    put $ gs { gTanks = ((newPlayerTank pid) : (gTanks gs)) }
+  (NPC pid) -> do
+    gs <- get;
+    case findNPCTankSlot pid gs of
+      Nothing -> return ()
+      Just x -> put $ gs { gTanks = ((newNPCTank pid x r) : (gTanks gs)) }
 
-addNewTank :: Player -> GameStateM ()
-addNewTank pl = do
-  gs <- get
-  put $ gs {
-      gTanks = (newTankPos pl : (gTanks gs))
-    }
+findNPCTankSlot :: Int -> GameState -> Maybe Int
+findNPCTankSlot i gs = let
+  tanks = gTanks gs
+  slots = case i `mod` 3 of
+    0 -> [0, 12, 24]
+    1 -> [12, 24, 0]
+    2 -> [24, 0, 12]
+  checkTank slot tank = let
+    (x, y) = tPosition tank
+    in (y == 0 || y == 1) && (x == slot || x == slot + 1)
+  in
+    if (length tanks) > 5
+    then Nothing
+    else List.find (\slot -> not $ List.any (checkTank slot) tanks) slots
 
 moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
@@ -127,7 +141,7 @@ updateFields f = do
     put $ gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
 modifyMove :: Player -> GameAction -> GameStateM ()
-modifyMove p NewPlayer = addNewTank p
+modifyMove p (NewPlayer r) = addNewTank p r
 modifyMove p (Move d) = do
   gs <- get
   updateTanks $ moveTank gs p d
