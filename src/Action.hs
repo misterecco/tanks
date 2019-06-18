@@ -115,54 +115,26 @@ shootTank pl (tank:xs) =
 	if tPlayer tank == pl
 	then newTank:xs
 	else tank:(shootTank pl xs)
-	where newTank =
-		Tank
-		(tDirection tank)
-		(tPosition tank)
-		(tVelocity tank)
-		(tPlayer tank)
-		(tColor tank)
-		(tSize tank)
-		(tBonuses tank)
-		((Bullet
+	where newTank = tank { tBullets =
+		(Bullet
 			(tDirection tank)
 			(barrelPosition tank)
 			bulletVelocity
 			(tPlayer tank)
-		):(tBullets tank))
+		):(tBullets tank)
+		}
 
 updateBullets :: Tank -> [Bullet] -> Tank
-updateBullets tank bullets =
-    Tank
-	(tDirection tank)
-	(tPosition tank)
-	(tVelocity tank)
-	(tPlayer tank)
-	(tColor tank)
-	(tSize tank)
-	(tBonuses tank)
-	bullets
+updateBullets tank bullets = tank { tBullets = bullets }
 
 updateTanks :: ([Tank] -> [Tank]) -> GameState -> GameState
-updateTanks f gs =
-	GameState
-	(gBoard gs)
-	(f (gTanks gs))
-	(gBonusItem gs)
-    (gGeneralBonuses gs)
-	(gEagle gs)
+updateTanks f gs = gs { gTanks = f $ gTanks gs }
 
 updateFieldsBoard :: (Map Position Field -> Map Position Field) -> Board -> Board
 updateFieldsBoard f (Board n m b) = Board n m (f b)
 
 updateFields :: (Map Position Field -> Map Position Field) -> GameState -> GameState
-updateFields f gs =
-	GameState
-	(updateFieldsBoard f (gBoard gs))
-	(gTanks gs)
-	(gBonusItem gs)
-    (gGeneralBonuses gs)
-	(gEagle gs)
+updateFields f gs = gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
 modifyMoves :: [(Player, GameAction)] -> GameState -> ([(Player, GameAction)], GameState)
 modifyMoves [] gs = ([], gs)
