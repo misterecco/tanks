@@ -140,6 +140,24 @@ updateFields f = do
     gs <- get
     put $ gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
+updateDestroyBulletsTank :: Bullet -> Tank -> GameStateM Tank
+updateDestroyBulletsTank bullet tank =
+  if tPlayer tank == bPlayer bullet
+  then return tank
+  else updateBullets (updateDestroyBulletsBullets bullet) tank
+
+updateDestroyBulletsTanks :: Bullet -> [Tank] -> GameStateM [Tank]
+updateDestroyBulletsTanks _ [] = return ()
+updateDestroyBulletsTanks bullet (x:xs) =
+  y <- updateDestroyBulletsTank bullet tank
+  ys <- updateDestroyBulletsTanks bullet xs
+  return (y:ys)
+
+updateDestroyBullets :: Bullet -> GameStateM ()
+updateDestroyBullets bullet =
+  gs <- get;
+  updateDestroyBulletsTanks bullet (gTanks gs)
+
 checkEagleBullet :: Bullet -> GameStateM ()
 checkEagleBullet bullet =
   let positions = bulletPositions bullet in
@@ -179,7 +197,8 @@ moveBullet bullet =
 	updateFields $ mapWithKey
 		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty);
 	-- TODO destroy Bullets
-	-- TODO destroy eagle
+	updateDestroyBullets $ bullet {bPosition = newPos};
+	-- destroy eagle
 	checkEagleBullet $ bullet {bPosition = newPos};
 	-- move Bullet
 	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
