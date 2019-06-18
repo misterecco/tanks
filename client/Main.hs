@@ -66,8 +66,6 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
             -- print $ "Last event was: " ++ show e
             when (isAction e) $ do {
 				BSL.hPutStrLn hdl (encodeGameAction (toAction e));
-				BSL.hPutStrLn hdl (encodeGameAction (toAction e));
-				BSL.hPutStrLn hdl (encodeGameAction (toAction e));
 			}
             case e of
                 SDL.QuitEvent -> do

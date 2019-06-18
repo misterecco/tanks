@@ -63,9 +63,6 @@ main = do
   bind sock (addrAddress addr)
   listen sock 10
   chan <- newChan
-  _ <- forkIO $ fix $ \loop -> do
-    _ <- readChan chan
-    loop
   map <- newIORef Data.Map.empty
   forkIO (runServer chan map (initialGameState firstLevel))
   forkIO (readMoves chan map)
@@ -79,6 +76,7 @@ mainLoop sock chan msgNum = do
 
 runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
 runConn (sock, _) chan playerNum = do
+
     let broadcast msg = writeChan chan (Action (Human playerNum) (decodeGameAction msg))
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
