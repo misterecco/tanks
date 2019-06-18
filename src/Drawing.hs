@@ -85,9 +85,19 @@ drawBonus r t bi = case bi of
   Nothing -> return ()
   Just (b, pos) -> drawObject r t (getBonusRect b) (toCIntPair pos) 2
 
+
 drawEagle :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Eagle -> m ()
 drawEagle r t e =
   drawObject r t (getEagleRect e) (toCIntPair eaglePosition) 2
+
+
+drawScore :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Int -> Int -> m ()
+drawScore r t s p = do
+  let d = s `mod` 10
+  let ns = s `div` 10
+
+  drawObject r t (getDigitRect d) (fromIntegral p, 0) 1
+  unless (ns == 0) $ drawScore r t ns (p-1)
 
 
 drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()
@@ -100,6 +110,12 @@ drawGame r t g = do
   forM_ (gTanks g) (drawTank r t)
   drawForest r t (gBoard g)
   drawBonus r t (gBonusItem g)
+
+  let scorePos = U.mkRect (30 * tileSize) (2 * tileSize) (8 * tileSize) tileSize
+  liftIO $ print scorePos
+  liftIO $ print (gPoints g)
+  setViewport r scorePos
+  drawScore r t (gPoints g) 7
 
 
 setViewport :: (MonadIO m) => SDL.Renderer -> SDL.Rectangle CInt -> m ()
