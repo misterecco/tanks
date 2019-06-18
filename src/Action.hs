@@ -211,8 +211,9 @@ modifyMove p (GiveLives x) = do
   gs <- get;
   put $ gs { gLives = Data.Map.insert p x $ gLives gs }
 modifyMove p DestroyPlayer = do
-  _ <- updateTanks (List.filter (\tank -> tPlayer tank /= p))
-  return ()
+  updateTanks (List.filter (\tank -> tPlayer tank /= p))
+  gs <- get
+  put $ gs { gLives = Data.Map.delete p $ gLives gs }
 
 modifyMoves :: [(Player, GameAction)] -> GameStateM ()
 modifyMoves [] = return ()
@@ -285,7 +286,24 @@ filterDestroyed :: GameStateM ()
 filterDestroyed = do
   gs <- get
   _ <- updateTanks (List.filter (\t -> tStatus t == Working))
+  Control.Monad.HT.map (\tank -> if tStatus tank /= Working then tryRespawn (tPlayer tank) else return ()) (gTanks gs)
   return ()
+
+respawn :: Player -> Int -> GameStateM ()
+respawn pl lives = do
+  return $ traceShowId pl
+  gs <- get
+  put $ gs { gLives = Data.Map.insert pl lives $ gLives gs }
+  modifyMove pl (NewPlayer 0)
+
+tryRespawn :: Player -> GameStateM ()
+tryRespawn pl = do
+  gs <- get
+  case Data.Map.lookup pl (gLives gs) of
+    Nothing -> return ()
+    Just lives -> if lives == 0 || isJust (List.find (\tank -> (tPlayer tank == pl)) (gTanks gs))
+                    then return ()
+                    else respawn pl (lives - 1)
 
 updateGameState :: [(Player, GameAction)] -> GameStateM ()
 updateGameState moves = do
