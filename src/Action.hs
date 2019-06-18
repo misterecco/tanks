@@ -140,23 +140,43 @@ updateFields f = do
     gs <- get
     put $ gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
-updateDestroyBulletsTank :: Bullet -> Tank -> GameStateM Tank
-updateDestroyBulletsTank bullet tank =
+updateDestroyBulletsBullets :: Bullet -> Bullet -> [Bullet] -> [Bullet]
+updateDestroyBulletsBullets _ _ [] = return []
+updateDestroyBulletsBullets oldBullet bullet (x:xs) =
+  let update b =
+    let oldPos = bulletPositions oldBullet in
+    let newPos = bulletPositions bullet in
+    let posEnemy = bulletPositions b in
+    let l1 = List.intersect oldPos posEnemy in
+    let l2 = List.intersect newPos posEnemy in
+    if (l1 /= [] && l2 /= []) || (length l2 == 2) then Nothing else Just b
+  in do
+    y <- update x
+    ys <- updateDestroyBulletsBullets bullet xs
+    case y of
+      Nothing -> return ys
+      Just b -> return (b:ys)
+
+updateDestroyBulletsTank :: Bullet -> Bullet -> Tank -> GameStateM Tank
+updateDestroyBulletsTank oldBullet bullet tank =
   if tPlayer tank == bPlayer bullet
   then return tank
-  else updateBullets (updateDestroyBulletsBullets bullet) tank
+  else updateBullets tank (updateDestroyBulletsBullets oldBullet bullet (tBullets tank))
 
-updateDestroyBulletsTanks :: Bullet -> [Tank] -> GameStateM [Tank]
+updateDestroyBulletsTanks :: Bullet -> Bullet -> [Tank] -> GameStateM [Tank]
 updateDestroyBulletsTanks _ [] = return ()
-updateDestroyBulletsTanks bullet (x:xs) =
-  y <- updateDestroyBulletsTank bullet tank
-  ys <- updateDestroyBulletsTanks bullet xs
+updateDestroyBulletsTanks oldBullet bullet (x:xs) =
+  y <- updateDestroyBulletsTank oldBullet bullet tank
+  ys <- updateDestroyBulletsTanks oldBullet bullet xs
   return (y:ys)
 
-updateDestroyBullets :: Bullet -> GameStateM ()
-updateDestroyBullets bullet =
+updateDestroyBullets :: Bullet -> Bullet -> GameStateM Bool
+updateDestroyBullets oldBullet bullet =
   gs <- get;
-  updateDestroyBulletsTanks bullet (gTanks gs)
+  tanks <- updateDestroyBulletsTanks oldBullet bullet (gTanks gs)
+  if gTanks gs == tanks return False else do
+    put $ gs { gTanks tanks }
+    return True
 
 checkEagleBullet :: Bullet -> GameStateM ()
 checkEagleBullet bullet =
@@ -197,12 +217,14 @@ moveBullet bullet =
 	updateFields $ mapWithKey
 		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty);
 	-- TODO destroy Bullets
-	updateDestroyBullets $ bullet {bPosition = newPos};
+	destroyed <- updateDestroyBullets bullet $ bullet {bPosition = newPos};
 	-- destroy eagle
 	checkEagleBullet $ bullet {bPosition = newPos};
 	-- move Bullet
 	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
-	if List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
+	if
+	  destroyed
+	  || List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
 		|| fields /= []
 		|| (isNothing $ maybeGetField (gBoard gs) newPos)
 	then return Nothing
