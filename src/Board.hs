@@ -98,7 +98,7 @@ data GameState = GameState
 type GameStateM a = State GameState a
 
 initialGameState :: Board -> GameState
-initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive 0 Data.Map.empty
+initialGameState board = GameState board [] Nothing [] Alive 0 Data.Map.empty
 
 eaglePosition :: Position
 eaglePosition = (12, 24)

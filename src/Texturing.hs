@@ -77,3 +77,18 @@ getBulletRect b = case bDirection b of
   RIGHT -> toRect 344 100
   where
     toRect x y = U.mkRect x y tileSize tileSize
+
+getDigitRect :: Int -> SDL.Rectangle CInt
+getDigitRect d = case d of
+  1 -> toRect 336 184
+  2 -> toRect 344 184
+  3 -> toRect 352 184
+  4 -> toRect 360 184
+  5 -> toRect 328 192
+  6 -> toRect 336 192
+  7 -> toRect 344 192
+  8 -> toRect 352 192
+  9 -> toRect 360 192
+  _ -> toRect 328 184
+  where
+    toRect x y = U.mkRect x y tileSize tileSize

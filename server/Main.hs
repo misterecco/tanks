@@ -73,7 +73,7 @@ runServer chan eventsChan moves gameState = do
 			  --  	IO.putStrLn $ show newState
 			  -- wait 0.25s
 			  forkIO (makeNPCMoves chan newState)
-			  threadDelay 250000
+			  threadDelay 100000
 			  runServer chan eventsChan moves newState
 
 

@@ -21,6 +21,7 @@ import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import SDL (($=))
 import System.Exit
+import System.Environment
 import System.IO as Sys
 
 import Board
@@ -32,6 +33,11 @@ main :: IO ()
 main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
   \w -> U.withRenderer w $ \r -> do
 
+    args <- getArgs
+    when (Prelude.length args == 0) $ do
+        print "Usage: client-exe serverAddress"
+        exitFailure
+
     SDL.rendererDrawColor r $= SDL.V4 minBound minBound minBound maxBound
     t <- SDL.Image.loadTexture r "./assets/tanks_alpha.png"
     SDL.textureBlendMode t $= SDL.BlendAlphaBlend
@@ -39,7 +45,7 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
     let doRender = \game -> SDL.clear r >> drawGame r t game >> SDL.present r
     shouldExit <- newIORef False
 
-    addr <- resolve "127.0.0.1" "4242"
+    addr <- resolve (Prelude.head args) "4242"
     E.bracket (open addr) close (talkSock doRender shouldExit )
 
     SDL.destroyTexture t
