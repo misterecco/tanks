@@ -45,7 +45,7 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
     let doRender = \game -> SDL.clear r >> drawGame r t game >> SDL.present r
     shouldExit <- newIORef False
 
-    addr <- resolve "127.0.0.1" "4242"
+    addr <- resolve (Prelude.head args) "4242"
     E.bracket (open addr) close (talkSock doRender shouldExit )
 
     SDL.destroyTexture t
