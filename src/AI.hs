@@ -19,9 +19,9 @@ positionOfGoal (GoalPlayer pl) gs =
 
 canMove :: GameState -> Set Position -> (Position, GameAction) -> Bool
 canMove gs unchecked (pos, action) =
-	let fields = getFieldsByTank (gBoard gs) pos in
-	let tanks = getTanksByTankPosition gs pos in
-	length fields == 4 && all canEnterField fields && Set.member pos unchecked
+  let fields = getFieldsByTank (gBoard gs) pos in
+  let tanks = getTanksByTankPosition gs pos in
+  length fields == 4 && all canEnterField fields && Set.member pos unchecked
 
 allMoves :: Position -> GameAction -> [(Position, GameAction)]
 allMoves (x, y) action =

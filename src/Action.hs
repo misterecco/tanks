@@ -53,16 +53,16 @@ encodeGameAction gs = encode gs
 
 decodeGameAction :: BS.ByteString -> GameAction
 decodeGameAction str =
-	case decode $ fromStrict str of
-	  Just x -> x
-	  _ -> InvalidAction
+  case decode $ fromStrict str of
+    Just x -> x
+    _ -> InvalidAction
 
 updateMovesMap :: Player -> GameAction -> MovesMap -> MovesMap
 updateMovesMap player gameAction movesMap =
-	Data.Map.alter f player movesMap where
-	f Nothing = Just gameAction
-	f (Just (NewPlayer r)) = Just (NewPlayer r)
-	f (Just _) = Just gameAction
+  Data.Map.alter f player movesMap where
+  f Nothing = Just gameAction
+  f (Just (NewPlayer r)) = Just (NewPlayer r)
+  f (Just _) = Just gameAction
 
 addNewTank :: Player -> Int -> GameStateM ()
 addNewTank pl r = case pl of
@@ -92,24 +92,24 @@ findNPCTankSlot i gs = let
 
 moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
-	let newPos = moveByDir pos 1 dir in
-	let fields = getFieldsByTank (gBoard gs) newPos in
-	let tanks = getTanksByTankPosition gs newPos in
-	if length fields == 4 && length tanks == 1 && all canEnterField fields then newPos else pos
+  let newPos = moveByDir pos 1 dir in
+  let fields = getFieldsByTank (gBoard gs) newPos in
+  let tanks = getTanksByTankPosition gs newPos in
+  if length fields == 4 && length tanks == 1 && all canEnterField fields then newPos else pos
 
 moveFieldTank :: GameState -> Tank -> Tank
 moveFieldTank gs tank = tank { tPosition =
-		moveField gs (tDirection tank) (tPosition tank)
-	}
+    moveField gs (tDirection tank) (tPosition tank)
+  }
 
 moveTank :: GameState -> Player -> Dir -> [Tank] -> [Tank]
 moveTank _ _ _ [] = []
 moveTank gs pl dir (tank:xs) =
-	if tPlayer tank == pl
-	then if tDirection tank == dir
-	  then moveFieldTank gs tank : xs
-	  else tank { tDirection = dir } : xs
-	else tank : moveTank gs pl dir xs
+  if tPlayer tank == pl
+  then if tDirection tank == dir
+    then moveFieldTank gs tank : xs
+    else tank { tDirection = dir } : xs
+  else tank : moveTank gs pl dir xs
 
 bulletVelocity ::Velocity
 bulletVelocity = (4, 0)
@@ -117,17 +117,17 @@ bulletVelocity = (4, 0)
 shootTank :: Player -> [Tank] -> [Tank]
 shootTank _ [] = []
 shootTank pl (tank:xs) =
-	if tPlayer tank == pl
-	then newTank:xs
-	else tank:(shootTank pl xs)
-	where newTank = tank { tBullets =
-		(Bullet
-			(tDirection tank)
-			(barrelPosition tank)
-			bulletVelocity
-			(tPlayer tank)
-		):(tBullets tank)
-		}
+  if tPlayer tank == pl
+  then newTank:xs
+  else tank:(shootTank pl xs)
+  where newTank = tank { tBullets =
+    (Bullet
+      (tDirection tank)
+      (barrelPosition tank)
+      bulletVelocity
+      (tPlayer tank)
+    ):(tBullets tank)
+    }
 
 updateBullets :: Tank -> [Bullet] -> Tank
 updateBullets tank bullets = tank { tBullets = bullets }
@@ -223,47 +223,47 @@ modifyMoves ((p, action):xs) = do
 
 moveBullet :: Bullet -> GameStateM (Maybe Bullet)
 moveBullet bullet =
-	-- kill tanks
-	let player = bPlayer bullet in
-	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in do
-	  gs <- get;
-	  updated <- updateAllTanksM (\tank ->
-		  if sameTeam player (tPlayer tank) || not (tankOverlapBullet (bullet { bPosition = newPos}) tank)
-		  then return tank
-		  else do
-		    increasePoints $ if isHuman player then 100 else 0
-		    case traceShowId $ nextColor (tColor tank) of
-		      Nothing -> return tank { tStatus = Destroyed }
-		      Just col -> return tank { tColor = col }
-		  );
-	-- destroy bricks
-	  let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in do
-	    updateFields $ mapWithKey
-		    (\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty)
-	    -- destroy Bullets
-	    destroyed <- updateDestroyBullets bullet $ bullet {bPosition = newPos};
-	    -- destroy eagle
-	    checkEagleBullet $ bullet {bPosition = newPos};
-	    -- move Bullet
-	    let collided = List.any (\tank -> (tPlayer tank /= bPlayer bullet)
-	                && tankOverlapBullet (bullet { bPosition = newPos}) tank) (gTanks gs) in do
-	      if destroyed || updated || collided || fields /= [] || (isNothing $ maybeGetField (gBoard gs) newPos)
-	      then return Nothing
-	      else return $ Just $ bullet {bPosition = newPos}
+  -- kill tanks
+  let player = bPlayer bullet in
+  let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in do
+    gs <- get;
+    updated <- updateAllTanksM (\tank ->
+      if sameTeam player (tPlayer tank) || not (tankOverlapBullet (bullet { bPosition = newPos}) tank)
+      then return tank
+      else do
+        increasePoints $ if isHuman player then 100 else 0
+        case traceShowId $ nextColor (tColor tank) of
+          Nothing -> return tank { tStatus = Destroyed }
+          Just col -> return tank { tColor = col }
+      );
+  -- destroy bricks
+    let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in do
+      updateFields $ mapWithKey
+        (\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty)
+      -- destroy Bullets
+      destroyed <- updateDestroyBullets bullet $ bullet {bPosition = newPos};
+      -- destroy eagle
+      checkEagleBullet $ bullet {bPosition = newPos};
+      -- move Bullet
+      let collided = List.any (\tank -> (tPlayer tank /= bPlayer bullet)
+                  && tankOverlapBullet (bullet { bPosition = newPos}) tank) (gTanks gs) in do
+        if destroyed || updated || collided || fields /= [] || (isNothing $ maybeGetField (gBoard gs) newPos)
+        then return Nothing
+        else return $ Just $ bullet {bPosition = newPos}
 
 moveBulletsList :: [Bullet] -> GameStateM [Bullet]
 moveBulletsList [] = return []
 moveBulletsList (x:xs) = do
-	y <- moveBullet x
-	ys <- moveBulletsList xs
-	case y of
-		Just b -> return $ b:ys
-		Nothing -> return ys
+  y <- moveBullet x
+  ys <- moveBulletsList xs
+  case y of
+    Just b -> return $ b:ys
+    Nothing -> return ys
 
 moveBulletsTank :: Tank -> GameStateM Tank
 moveBulletsTank tank = do
-	bullets <- moveBulletsList (tBullets tank)
-	return $ updateBullets tank bullets
+  bullets <- moveBulletsList (tBullets tank)
+  return $ updateBullets tank bullets
 
 moveBulletsTanks :: [Tank] -> GameStateM ()
 moveBulletsTanks [] = return ()

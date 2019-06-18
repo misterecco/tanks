@@ -29,10 +29,10 @@ data Player = Human Int | NPC Int
   deriving (Generic, Show, FromJSON, ToJSON, Eq, FromJSONKey, ToJSONKey)
 
 instance Ord Player where
-	(<=) (Human _) (NPC _) = True
-	(<=) (NPC _) (Human _) = False
-	(<=) (Human a) (Human b) = a <= b
-	(<=) (NPC a) (NPC b) = a <= b
+  (<=) (Human _) (NPC _) = True
+  (<=) (NPC _) (Human _) = False
+  (<=) (Human a) (Human b) = a <= b
+  (<=) (NPC a) (NPC b) = a <= b
 
 data Color = Yellow | Green | Silver
   deriving (Generic, Show, FromJSON, ToJSON, Eq)
@@ -81,7 +81,7 @@ data Tank = Tank
   } deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Board = Board Int Int (Map (Int, Int) Field)
-	deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 data GameState = GameState
   { gBoard :: Board
@@ -139,33 +139,33 @@ newNPCTank i x r = let
 
 barrelPosition :: Tank -> Position
 barrelPosition tank =
-	let (x, y) = tPosition tank in
-	case tDirection tank of
-		UP -> (x, y)
-		DOWN -> (x + 1, y + 1)
-		LEFT -> (x, y + 1)
-		RIGHT -> (x + 1, y)
+  let (x, y) = tPosition tank in
+  case tDirection tank of
+    UP -> (x, y)
+    DOWN -> (x + 1, y + 1)
+    LEFT -> (x, y + 1)
+    RIGHT -> (x + 1, y)
 
 tankOverlap :: Position -> Tank -> Bool
 tankOverlap (x, y) tank =
-	let (tx, ty) = tPosition tank in
-	((abs $ tx - x) <= 1) && ((abs $ ty - y) <= 1)
+  let (tx, ty) = tPosition tank in
+  ((abs $ tx - x) <= 1) && ((abs $ ty - y) <= 1)
 
 tankOverlapBulletP :: Position -> Tank -> Bool
 tankOverlapBulletP (x, y) tank =
-	let (tx, ty) = tPosition tank in
-	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
+  let (tx, ty) = tPosition tank in
+  -1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 
 tankPositions :: Tank -> [Position]
 tankPositions tank =
-	let (x, y) = tPosition tank in
-	[(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+  let (x, y) = tPosition tank in
+  [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
 
 tankOverlapBullet :: Bullet -> Tank -> Bool
 tankOverlapBullet bullet tank =
   let bulletPos = bulletPositions bullet in
-	let tankPos = tankPositions tank in
-	List.intersect bulletPos tankPos /= []
+  let tankPos = tankPositions tank in
+  List.intersect bulletPos tankPos /= []
 
 -- COLOR FUNCTIONS --
 
@@ -200,7 +200,7 @@ allFields gs = allFieldsBoard $ gBoard gs
 
 tankOverlapField :: Position -> Position -> Bool
 tankOverlapField (x, y) (tx, ty) =
-	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
+  -1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 
 getFieldsByBullet :: Board -> Bullet -> [(Position, Field)]
 getFieldsByBullet (Board _ _ mapa) bullet =
@@ -212,9 +212,9 @@ getFieldsByTank (Board _ _ mapa) pos =
 
 getField :: Board -> (Int, Int) -> Field
 getField (Board _ _ mapa) pos =
-	case Data.Map.lookup pos mapa of
-		Just x -> x
-		Nothing -> traceShow pos Empty
+  case Data.Map.lookup pos mapa of
+    Just x -> x
+    Nothing -> traceShow pos Empty
 
 maybeGetField :: Board -> (Int, Int) -> Maybe Field
 maybeGetField (Board _ _ mapa) pos = Data.Map.lookup pos mapa
@@ -292,13 +292,13 @@ increasePoints x = do
 
 getTanksByTankPosition :: GameState -> Position -> [Tank]
 getTanksByTankPosition gs pos =
-	List.filter (tankOverlap pos) (gTanks gs)
+  List.filter (tankOverlap pos) (gTanks gs)
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
 encodeGameState gs =  encode $ gs
 
 decodeGameState :: BS.ByteString -> GameState
 decodeGameState str =
-	case decode $ fromStrict str of
-	  Just x -> x
-	  _ -> error "Invalid Game State"
+  case decode $ fromStrict str of
+    Just x -> x
+    _ -> error "Invalid Game State"

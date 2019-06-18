@@ -6,13 +6,16 @@ You need to have the following libraries installed in your system:
 - sdl2-image
 
 ## Troubleshooting
-BadValue (integer parameter out of range for operation)
+> BadValue (integer parameter out of range for operation)
 
 Add `+iglx` to `lightdm` config
 https://askubuntu.com/questions/801440/login-loop-badvalue-integer-parameter-out-of-range-for-operation-16-04
 
 ## Running
 ```
-stack build tanks
-stack exec tanks-exe
+stack build
+stack exec server-exe
+stack exec client-exe <server-address>
 ```
+
+Client accepts only IP as server address. Host names will not be resolved

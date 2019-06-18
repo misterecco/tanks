@@ -43,7 +43,7 @@ library:
   source-dirs: src
 
 executables:
-  server-exe:
+  tanks-server:
     main:                Main.hs
     source-dirs:         server
     ghc-options:
@@ -52,7 +52,7 @@ executables:
     dependencies:
     - tanks
 
-  client-exe:
+  tanks-client:
     main:                Main.hs
     source-dirs:         client
     ghc-options:

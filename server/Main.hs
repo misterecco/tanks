@@ -61,31 +61,31 @@ readAllAvailable eventsChan = do
 
 runServer :: Chan Msg -> Sync.Chan QueueEvent -> IORef MovesMap -> GameState -> IO ()
 runServer chan eventsChan moves gameState = do
-	events <- readAllAvailable eventsChan;
-	prevMoves <- readIORef moves;
-	writeIORef moves Data.Map.empty
-	let currMoves = Data.List.map eventToMove (traceShowId events) ++ Data.Map.toList prevMoves in do
-	  IO.putStrLn $ show currMoves;
-	  if gEagle gameState == Dead
-		  then runServer chan eventsChan moves gameState
-		  else let (_, newState) = runState (updateGameState currMoves) gameState in do
-			  writeChan chan (SendGameState newState)
-			  --  	IO.putStrLn $ show newState
-			  -- wait 0.25s
-			  forkIO (makeNPCMoves chan newState)
-			  threadDelay 100000
-			  runServer chan eventsChan moves newState
+  events <- readAllAvailable eventsChan;
+  prevMoves <- readIORef moves;
+  writeIORef moves Data.Map.empty
+  let currMoves = Data.List.map eventToMove (traceShowId events) ++ Data.Map.toList prevMoves in do
+    IO.putStrLn $ show currMoves;
+    if gEagle gameState == Dead
+      then runServer chan eventsChan moves gameState
+      else let (_, newState) = runState (updateGameState currMoves) gameState in do
+        writeChan chan (SendGameState newState)
+        --    IO.putStrLn $ show newState
+        -- wait 0.25s
+        forkIO (makeNPCMoves chan newState)
+        threadDelay 100000
+        runServer chan eventsChan moves newState
 
 
 
 resolve :: String -> IO AddrInfo
 resolve port = do
-	let hints = defaultHints {
-			addrFlags = [AI_PASSIVE]
-		  , addrSocketType = Stream
-		  }
-	addr:_ <- getAddrInfo (Just hints) Nothing (Just port)
-	return addr
+  let hints = defaultHints {
+      addrFlags = [AI_PASSIVE]
+      , addrSocketType = Stream
+      }
+  addr:_ <- getAddrInfo (Just hints) Nothing (Just port)
+  return addr
 
 addNPCs :: Chan Msg -> Int -> IO ()
 addNPCs chan i = do
@@ -148,8 +148,8 @@ runConn (sock, _) chan eventsChan playerNum = do
         e <- readChan commLine
         case e of
             SendGameState gameState -> do {
-				BSL.hPutStrLn hdl (encodeGameState gameState)
-				}
+        BSL.hPutStrLn hdl (encodeGameState gameState)
+        }
             _ -> return ()
         loop
 
