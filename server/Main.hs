@@ -15,6 +15,7 @@ import Data.ByteString as BS
 import Data.Binary
 import Board
 import Action
+import AI
 
 -- Change to Move Int GameAction
 data GameEvent =
@@ -64,7 +65,7 @@ addNPCs :: Chan Msg -> Int -> IO ()
 addNPCs chan i = do
   r <- abs <$> randomIO
   writeChan chan (Action (NPC i) (NewPlayer r))
-  threadDelay 1000000
+  threadDelay 250000
   addNPCs chan (i + 1)
 
 makeNPCMoves :: Chan Msg -> GameState -> IO ()
@@ -73,21 +74,11 @@ makeNPCMoves chan gs = let
   isNPC tank = case tPlayer tank of
     NPC _ -> True
     Human _ -> False
-  makeMoves npc = do
-    let pl = tPlayer npc
+  makeMoves gs npc = do
     r <- abs <$> (randomIO :: IO Int)
-    case r `mod` 3 of
-      0 -> writeChan chan (Action pl (Shoot))
-      _ -> return ()
-    case r `mod` 5 of
-      0 -> writeChan chan (Action pl (Move UP))
-      1 -> writeChan chan (Action pl (Move DOWN))
-      2 -> writeChan chan (Action pl (Move LEFT))
-      3 -> writeChan chan (Action pl (Move RIGHT))
-      _ -> return ()
-    in
-  forM_ npcs makeMoves
-
+    let action = doAIMove r gs in writeChan chan (Action (tPlayer npc) action)
+  in
+  forM_ npcs (makeMoves gs)
 
 main :: IO ()
 main = do
