@@ -103,12 +103,6 @@ initialGameState board = GameState board [] Nothing [] Alive 0 Data.Map.empty
 eaglePosition :: Position
 eaglePosition = (12, 24)
 
-x_coeff :: Int
-x_coeff = 17
-
-y_coeff :: Int
-y_coeff = 67
-
 bounds :: Board -> ((Int, Int), (Int, Int))
 bounds (Board n m _ ) = ((0, 0), (n-1, m-1))
 
@@ -210,15 +204,6 @@ tankOverlapField :: Position -> Position -> Bool
 tankOverlapField (x, y) (tx, ty) =
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 
-randomField :: Int -> Int -> Field
-randomField i j =
-    case ((i * 1000 + j) `xor` 8475845) `mod` 5 of
-        0 -> Bricks
-        1 -> Forest
-        2 -> Stone
-        3 -> Ice
-        _ -> Empty
-
 getFieldsByBullet :: Board -> Bullet -> [(Position, Field)]
 getFieldsByBullet (Board _ _ mapa) bullet =
     Data.Map.toList $ Data.Map.filterWithKey (\k -> \v -> bulletOverlap k bullet && not (canEnterField v)) mapa
@@ -299,9 +284,6 @@ firstLevel = Board 26 26 $ Data.Map.fromList $ concat
 
 getBoard :: Int -> Int -> Board
 getBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), Empty) | j <- [0..n-1] ] | i <- [0..m-1]] )
-
-randomBoard :: Int -> Int -> Board
-randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField i j) | j <- [0..n-1] ] | i <- [0..m-1]] )
 
 -- GAMESTATE FUNCTIONS --
 
