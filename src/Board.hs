@@ -95,6 +95,8 @@ type GameStateM a = State GameState a
 initialGameState :: Board -> GameState
 initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive
 
+eaglePosition :: Position
+eaglePosition = (12, 24)
 
 x_coeff :: Int
 x_coeff = 17
@@ -111,6 +113,10 @@ sameTeam :: Player -> Player -> Bool
 sameTeam (Human _) (Human _) = True
 sameTeam (NPC _) (NPC _) = True
 sameTeam _ _ = False
+
+isHuman :: Player -> Bool
+isHuman (Human _ ) = True
+isHuman (NPC _) = False
 
 -- TANK FUNCTIONS --
 

@@ -35,9 +35,10 @@ readMoves chan moves = do
     readMoves chan moves
 
 runServer :: Chan Msg -> IORef MovesMap -> GameState -> IO ()
-runServer chan moves gameState = do
-	currMoves <- readIORef moves
-	IO.putStrLn $ show currMoves
+runServer chan moves gameState = do {
+	currMoves <- readIORef moves;
+	IO.putStrLn $ show currMoves;
+	if gEagle gameState == Dead then runServer chan moves gameState else
 	let (_, newState) = runState (updateGameState currMoves) gameState in do {
 	  writeIORef moves Data.Map.empty;
 	  writeChan chan (SendGameState newState);
@@ -46,6 +47,7 @@ runServer chan moves gameState = do
 	  threadDelay 250000;
 	  runServer chan moves newState;
 	 }
+}
 
 resolve :: String -> IO AddrInfo
 resolve port = do

@@ -85,10 +85,9 @@ drawBonus r t bi = case bi of
   Nothing -> return ()
   Just (b, pos) -> drawObject r t (getBonusRect b) (toCIntPair pos) 2
 
-
 drawEagle :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> Eagle -> m ()
 drawEagle r t e =
-  drawObject r t (getEagleRect e) (12, 24) 2
+  drawObject r t (getEagleRect e) (toCIntPair eaglePosition) 2
 
 
 drawGame :: (MonadIO m) => SDL.Renderer -> SDL.Texture -> GameState -> m ()

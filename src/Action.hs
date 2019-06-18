@@ -140,6 +140,15 @@ updateFields f = do
     gs <- get
     put $ gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
+checkEagleBullet :: Bullet -> GameStateM ()
+checkEagleBullet bullet =
+  let positions = bulletPositions bullet in
+  if not (isHuman $ bPlayer bullet) && (isJust $ List.find (== eaglePosition) positions)
+  then do
+    gs <- get
+    put $ gs { gEagle = Dead }
+  else return ()
+
 modifyMove :: Player -> GameAction -> GameStateM ()
 modifyMove p (NewPlayer r) = addNewTank p r
 modifyMove p (Move d) = do
@@ -171,6 +180,7 @@ moveBullet bullet =
 		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty);
 	-- TODO destroy Bullets
 	-- TODO destroy eagle
+	checkEagleBullet $ bullet {bPosition = newPos};
 	-- move Bullet
 	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
 	if List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
