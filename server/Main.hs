@@ -5,7 +5,7 @@ import System.IO as IO
 import System.Random
 import Control.Exception
 import Control.Concurrent
-import Control.Monad (when)
+import Control.Monad (when, forM_)
 import Control.Monad.State
 import Control.Monad.Fix (fix)
 import Data.IORef
@@ -35,19 +35,21 @@ readMoves chan moves = do
     readMoves chan moves
 
 runServer :: Chan Msg -> IORef MovesMap -> GameState -> IO ()
-runServer chan moves gameState = do {
+runServer chan moves gameState = do
 	currMoves <- readIORef moves;
 	IO.putStrLn $ show currMoves;
-	if gEagle gameState == Dead then runServer chan moves gameState else
-	let (_, newState) = runState (updateGameState currMoves) gameState in do {
-	  writeIORef moves Data.Map.empty;
-	  writeChan chan (SendGameState newState);
---  	IO.putStrLn $ show newState;
-	-- wait 0.25s
-	  threadDelay 250000;
-	  runServer chan moves newState;
-	 }
-}
+	if gEagle gameState == Dead
+		then runServer chan moves gameState
+		else let (_, newState) = runState (updateGameState currMoves) gameState in do
+			writeIORef moves Data.Map.empty;
+			writeChan chan (SendGameState newState);
+			--  	IO.putStrLn $ show newState;
+			-- wait 0.25s
+			forkIO (makeNPCMoves chan newState)
+			threadDelay 250000;
+			runServer chan moves newState;
+
+
 
 resolve :: String -> IO AddrInfo
 resolve port = do
@@ -64,6 +66,28 @@ addNPCs chan i = do
   writeChan chan (Action (NPC i) (NewPlayer r))
   threadDelay 1000000
   addNPCs chan (i + 1)
+
+makeNPCMoves :: Chan Msg -> GameState -> IO ()
+makeNPCMoves chan gs = let
+  npcs = Prelude.filter isNPC (gTanks gs)
+  isNPC tank = case tPlayer tank of
+    NPC _ -> True
+    Human _ -> False
+  makeMoves npc = do
+    let pl = tPlayer npc
+    r <- abs <$> (randomIO :: IO Int)
+    case r `mod` 3 of
+      0 -> writeChan chan (Action pl (Shoot))
+      _ -> return ()
+    case r `mod` 5 of
+      0 -> writeChan chan (Action pl (Move UP))
+      1 -> writeChan chan (Action pl (Move DOWN))
+      2 -> writeChan chan (Action pl (Move LEFT))
+      3 -> writeChan chan (Action pl (Move RIGHT))
+      _ -> return ()
+    in
+  forM_ npcs makeMoves
+
 
 main :: IO ()
 main = do
