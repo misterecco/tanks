@@ -57,7 +57,6 @@ main = withSocketsDo $ U.withSDL $ U.withWindow "Tank 1990" (1280, 800) $
 
     talkSock doRender shouldExit sock = do
         hdl <- socketToHandle sock ReadWriteMode
-        BSL.hPutStrLn hdl (encodeGameAction NewPlayer)
         forkIO $ talk hdl shouldExit
         readStream hdl doRender shouldExit
 

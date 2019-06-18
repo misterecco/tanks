@@ -8,11 +8,11 @@ module Board where
 
 import Data.Aeson
 
-import qualified Data.Array
+import qualified Data.List as List
 
-import Data.List
 import Data.Map
 import Data.Bits
+import Data.Maybe
 import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Generic, Rep)
@@ -145,10 +145,27 @@ tankOverlapBullet (x, y) tank =
 	let (tx, ty) = tPosition tank in
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
 
+-- BULLET FUNCTIONS
+
+bulletPositions :: Bullet -> [Position]
+bulletPositions bullet =
+    let (x, y) = bPosition bullet in
+    let second = case bDirection bullet of
+                    UP -> (x + 1, y)
+                    DOWN -> (x - 1, y)
+                    LEFT -> (x, y - 1)
+                    RIGHT -> (x, y + 1)
+    in [bPosition bullet, second]
+
+bulletOverlap :: Position -> Bullet -> Bool
+bulletOverlap pos bullet =
+    isJust $ List.find (== pos) (bulletPositions bullet)
+
+-- FIELD FUNCTIONS --
+
 tankOverlapField :: Position -> Position -> Bool
 tankOverlapField (x, y) (tx, ty) =
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
--- FIELD FUNCTIONS --
 
 randomField :: Int -> Int -> Field
 randomField i j =
@@ -159,12 +176,9 @@ randomField i j =
         3 -> Ice
         _ -> Empty
 
-getFieldsByBulletPosition :: Board -> Position -> [(Position, Field)]
-getFieldsByBulletPosition board pos =
-	let field = maybeGetField board pos in
-	case field of
-		Nothing -> []
-		Just f -> if canEnterField f then [] else [(pos, f)]
+getFieldsByBullet :: Board -> Bullet -> [(Position, Field)]
+getFieldsByBullet (Board _ _ mapa) bullet =
+    Data.Map.toList $ Data.Map.filterWithKey (\k -> \v -> bulletOverlap k bullet && not (canEnterField v)) mapa
 
 getFieldsByTank :: Board -> (Int, Int) -> [Field]
 getFieldsByTank (Board _ _ mapa) pos =
@@ -250,11 +264,11 @@ randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField
 
 getTanksByTankPosition :: GameState -> Position -> [Tank]
 getTanksByTankPosition gs pos =
-	Data.List.filter (tankOverlap pos) (gTanks gs)
+	List.filter (tankOverlap pos) (gTanks gs)
 
 getTanksByBulletPosition :: GameState -> Position -> [Tank]
 getTanksByBulletPosition gs pos =
-	Data.List.filter (tankOverlapBullet pos) (gTanks gs)
+	List.filter (tankOverlapBullet pos) (gTanks gs)
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
 encodeGameState gs =  encode $ gs

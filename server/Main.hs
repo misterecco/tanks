@@ -83,6 +83,8 @@ runConn (sock, _) chan playerNum = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
+    writeChan chan (Action (Human playerNum) NewPlayer)
+
     commLine <- dupChan chan
 
     -- fork off a thread for reading from the duplicated channel
@@ -90,7 +92,7 @@ runConn (sock, _) chan playerNum = do
         e <- readChan commLine
         case e of
             SendGameState gameState -> do {
-				BSL.hPutStrLn hdl ((encodeGameState gameState))
+				BSL.hPutStrLn hdl (encodeGameState gameState)
 				}
             _ -> return ()
         loop

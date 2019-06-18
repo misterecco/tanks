@@ -184,7 +184,7 @@ moveBullet bullet gs =
 		)) gs
 	in
 	-- destroy bricks
-	let fields = getFieldsByBulletPosition (gBoard gs) newPos in
+	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
 	let lastGameState = updateFields (mapWithKey
 		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty))
 		newGameState
@@ -194,7 +194,7 @@ moveBullet bullet gs =
 		|| fields /= []
 		|| (isNothing $ maybeGetField (gBoard gs) newPos)
 	then (Nothing, lastGameState)
-	else (Just $ Bullet (bDirection bullet) newPos (bVelocity bullet) (bPlayer bullet), lastGameState)
+	else (Just $ bullet {bPosition = newPos}, lastGameState)
 
 moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
 moveBulletsList [] gs = ([], gs)
