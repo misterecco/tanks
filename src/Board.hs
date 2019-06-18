@@ -90,8 +90,7 @@ data GameState = GameState
   } deriving (Generic, Show, FromJSON, ToJSON)
 
 initialGameState :: Board -> GameState
-initialGameState board = GameState board tanks (Just (Helmet, (2, 2))) [] Alive
-  where tanks = [newTank $ Human 0, newTank $ Human 1, newTank $ NPC 0, newTank $ NPC 1, newTank $ NPC 2]
+initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive
 
 
 x_coeff :: Int
@@ -112,19 +111,25 @@ sameTeam _ _ = False
 
 -- TANK FUNCTIONS --
 
-newTank :: Player -> Tank
-newTank pl = case pl of
-  Human i -> let
-    (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
+newPlayerTank :: Int -> Tank
+newPlayerTank i =
+    let (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
       in
-    Tank UP (x, 24) (0, 0) pl col Small [] [Bullet UP (x, 20) (0, 0) pl]
-  NPC i -> let
-    x = case i `mod` 3 of
-      0 -> 0
-      1 -> 12
-      2 -> 24
-      in
-    Tank DOWN (x, 0) (0, 0) pl Green Small [] []
+    Tank UP (x, 24) (0, 0) (Human i) col Small [] []
+
+newNPCTank :: Int -> Int -> Int -> Tank
+newNPCTank i x r = let
+  color = case r `mod` 3 of
+      0 -> Yellow
+      1 -> Green
+      2 -> Silver
+  size = case r `mod` 4 of
+      0 -> Small
+      1 -> Medium
+      2 -> Large
+      3 -> Huge
+    in
+    Tank DOWN (x, 0) (0, 0) (NPC i) color size [] []
 
 barrelPosition :: Tank -> Position
 barrelPosition tank =

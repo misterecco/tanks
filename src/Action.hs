@@ -60,13 +60,16 @@ updateMovesMap player gameAction movesMap =
 	f (Just _) = Just gameAction
 
 addNewTank :: Player -> GameState -> GameState
-addNewTank pl gs =
-	GameState
-	(gBoard gs)
-	(Tank DOWN (3, 0) (0, 0) pl Green Small [] [] : (gTanks gs))
-	(gBonusItem gs)
-    (gGeneralBonuses gs)
-  (gEagle gs)
+addNewTank pl gs = let
+  oldTanks = gTanks gs
+  newTank = case pl of
+    (Human pid) -> newPlayerTank pid
+    -- TODO: randomness, make sure the field is available
+    (NPC pid) -> newNPCTank pid 0 0
+  in
+    gs {
+      gTanks = (newTank : oldTanks)
+    }
 
 moveField :: GameState -> Dir -> Position -> Position
 moveField gs dir pos =
@@ -172,7 +175,7 @@ modifyMoves ((p, action):xs) gs =
 		Shoot -> updateTanks (shootTank p) gs
 
 moveBullet :: Bullet -> GameState -> (Maybe Bullet, GameState)
-moveBullet bullet gs = 
+moveBullet bullet gs =
 	-- kill tanks
 	let player = bPlayer bullet in
 	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in
@@ -198,7 +201,7 @@ moveBullet bullet gs =
 
 moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
 moveBulletsList [] gs = ([], gs)
-moveBulletsList (x:xs) gs = 
+moveBulletsList (x:xs) gs =
 	let (y, newgs) = moveBullet x gs in
 	let (ys, lastgs) = moveBulletsList xs newgs in
 	case y of
@@ -215,7 +218,7 @@ moveBulletsTanks gs [] = ([], gs)
 moveBulletsTanks gs (x:xs) =
 	let (y, newgs) = moveBulletsTank x gs in
 	let (ys, lastgs) = moveBulletsTanks newgs xs in
-	(y:ys, lastgs) 
+	(y:ys, lastgs)
 
 moveBullets :: GameState -> GameState
 moveBullets gs =

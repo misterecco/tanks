@@ -69,7 +69,7 @@ main = do
   map <- newIORef Data.Map.empty
   forkIO (runServer chan map (initialGameState firstLevel))
   forkIO (readMoves chan map)
-  mainLoop sock chan 1
+  mainLoop sock chan 0
 
 mainLoop :: Socket -> Chan Msg -> Int -> IO ()
 mainLoop sock chan msgNum = do
