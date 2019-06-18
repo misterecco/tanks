@@ -198,6 +198,12 @@ bulletOverlap pos bullet =
 
 -- FIELD FUNCTIONS --
 
+allFieldsBoard :: Board -> [Position]
+allFieldsBoard (Board _ _ board) = keys $ board
+
+allFields :: GameState -> [Position]
+allFields gs = allFieldsBoard $ gBoard gs
+
 tankOverlapField :: Position -> Position -> Bool
 tankOverlapField (x, y) (tx, ty) =
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0

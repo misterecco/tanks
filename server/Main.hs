@@ -76,7 +76,7 @@ makeNPCMoves chan gs = let
     Human _ -> False
   makeMoves gs npc = do
     r <- abs <$> (randomIO :: IO Int)
-    let action = doAIMove r gs in writeChan chan (Action (tPlayer npc) action)
+    let action = doAIMove r gs npc in writeChan chan (Action (tPlayer npc) action)
   in
   forM_ npcs (makeMoves gs)
 
