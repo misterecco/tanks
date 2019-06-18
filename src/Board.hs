@@ -157,10 +157,21 @@ tankOverlap (x, y) tank =
 	let (tx, ty) = tPosition tank in
 	((abs $ tx - x) <= 1) && ((abs $ ty - y) <= 1)
 
-tankOverlapBullet :: Position -> Tank -> Bool
-tankOverlapBullet (x, y) tank =
+tankOverlapBulletP :: Position -> Tank -> Bool
+tankOverlapBulletP (x, y) tank =
 	let (tx, ty) = tPosition tank in
 	-1 <= tx - x && tx - x <= 0 && -1 <= ty - y && ty - y <= 0
+
+tankPositions :: Tank -> [Position]
+tankPositions tank =
+	let (x, y) = tPosition tank in
+	[(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+
+tankOverlapBullet :: Bullet -> Tank -> Bool
+tankOverlapBullet bullet tank =
+  let bulletPos = bulletPositions bullet in
+	let tankPos = tankPositions tank in
+	List.intersect bulletPos tankPos /= []
 
 -- COLOR FUNCTIONS --
 
@@ -289,11 +300,6 @@ randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField
 getTanksByTankPosition :: GameState -> Position -> [Tank]
 getTanksByTankPosition gs pos =
 	List.filter (tankOverlap pos) (gTanks gs)
-
-getTanksByBulletPosition :: Position -> GameStateM [Tank]
-getTanksByBulletPosition pos = do
-    gs <- get
-    return $ List.filter (tankOverlapBullet pos) (gTanks gs)
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
 encodeGameState gs =  encode $ gs

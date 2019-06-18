@@ -129,10 +129,12 @@ shootTank pl (tank:xs) =
 updateBullets :: Tank -> [Bullet] -> Tank
 updateBullets tank bullets = tank { tBullets = bullets }
 
-updateTanks :: ([Tank] -> [Tank]) -> GameStateM ()
+updateTanks :: ([Tank] -> [Tank]) -> GameStateM Bool
 updateTanks f = do
-    gs <- get;
-    put $ gs { gTanks = f $ gTanks gs }
+  gs <- get;
+  let newTanks = f $ gTanks gs in do
+    put $ gs { gTanks = newTanks }
+    return $ newTanks /= gTanks gs
 
 updateFieldsBoard :: (Map Position Field -> Map Position Field) -> Board -> Board
 updateFieldsBoard f (Board n m b) = Board n m (f b)
@@ -188,9 +190,12 @@ modifyMove :: Player -> GameAction -> GameStateM ()
 modifyMove p (NewPlayer r) = addNewTank p r
 modifyMove p (Move d) = do
   gs <- get
-  updateTanks $ moveTank gs p d
+  _ <- updateTanks $ moveTank gs p d
+  return ()
 modifyMove p NoAction = return ()
-modifyMove p Shoot = updateTanks (shootTank p)
+modifyMove p Shoot = do
+  _ <- updateTanks (shootTank p)
+  return ()
 
 modifyMoves :: [(Player, GameAction)] -> GameStateM ()
 modifyMoves [] = return ()
@@ -203,9 +208,9 @@ moveBullet bullet =
 	-- kill tanks
 	let player = bPlayer bullet in
 	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in do {
-	tanks <- getTanksByBulletPosition newPos;
-	updateTanks $ List.map (\tank ->
-		if sameTeam player (tPlayer tank) || not (tankOverlap newPos tank)
+	gs <- get;
+	updated <- updateTanks $ List.map (\tank ->
+		if sameTeam player (tPlayer tank) || not (tankOverlapBullet (bullet { bPosition = newPos}) tank)
 		then tank
 		else case traceShowId $ nextColor (tColor tank) of
 		  Nothing -> tank { tStatus = Destroyed }
@@ -222,9 +227,11 @@ moveBullet bullet =
 	checkEagleBullet $ bullet {bPosition = newPos};
 	-- move Bullet
 	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
+	let collided = List.any (\tank -> (tPlayer tank /= bPlayer bullet) && tankOverlapBullet (bullet { bPosition = newPos}) tank) (gTanks gs) in
 	if
 	  destroyed
-	  || List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
+	  || updated
+	  || collided
 		|| fields /= []
 		|| (isNothing $ maybeGetField (gBoard gs) newPos)
 	then return Nothing
@@ -254,6 +261,7 @@ moveBulletsTanks (x:xs) = do
     Just oldTank -> do
       tank <- moveBulletsTank oldTank
       updateTanks $ List.map (\gsTank -> if tPlayer gsTank == tPlayer tank then tank else gsTank)
+      return ()
   moveBulletsTanks xs
 
 moveBullets :: GameStateM ()
@@ -264,7 +272,8 @@ moveBullets = do
 filterDestroyed :: GameStateM ()
 filterDestroyed = do
   gs <- get
-  updateTanks (List.filter (\t -> tStatus t == Working))
+  _ <- updateTanks (List.filter (\t -> tStatus t == Working))
+  return ()
 
 updateGameState :: MovesMap -> GameStateM ()
 updateGameState moves = do
