@@ -58,6 +58,8 @@ data Dir = UP | DOWN | LEFT | RIGHT
 data Eagle = Alive | Dead
   deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
+data TankStatus = Working | Destroyed
+  deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Bullet = Bullet
   { bDirection :: Dir
@@ -75,6 +77,7 @@ data Tank = Tank
   , tSize :: Size
   , tBonuses :: [TankBonus]
   , tBullets :: [Bullet]
+  , tStatus :: TankStatus
   } deriving (Generic, Show, FromJSON, ToJSON, Eq)
 
 data Board = Board Int Int (Map (Int, Int) Field)
@@ -124,7 +127,7 @@ newPlayerTank :: Int -> Tank
 newPlayerTank i =
     let (x, col) = if i `mod` 2 == 0 then (8, Yellow) else (16, Green)
       in
-    Tank UP (x, 24) (0, 0) (Human i) col Small [] []
+    Tank UP (x, 24) (0, 0) (Human i) col Small [] [] Working
 
 newNPCTank :: Int -> Int -> Int -> Tank
 newNPCTank i x r = let
@@ -138,7 +141,7 @@ newNPCTank i x r = let
       2 -> Large
       3 -> Huge
     in
-    Tank DOWN (x, 0) (0, 0) (NPC i) color size [] []
+    Tank DOWN (x, 0) (0, 0) (NPC i) color size [] [] Working
 
 barrelPosition :: Tank -> Position
 barrelPosition tank =

@@ -44,7 +44,9 @@ getTankRect t = let
   -- TODO: animation
   toRect x y = U.mkRect x y (2 * tileSize) (2 * tileSize)
     in
-  toRect (directionX + colorX) (sizeY + playerY + colorY)
+  if tStatus t == Destroyed
+  then toRect 256 124
+  else toRect (directionX + colorX) (sizeY + playerY + colorY)
 
 
 getEagleRect :: Eagle -> SDL.Rectangle CInt
