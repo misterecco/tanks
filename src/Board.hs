@@ -91,12 +91,13 @@ data GameState = GameState
   , gBonusItem :: Maybe (BonusItem, Position)
   , gGeneralBonuses :: [(GeneralBonus, Int)]
   , gEagle :: Eagle
+  , gPoints :: Int
   } deriving (Generic, Show, FromJSON, ToJSON)
 
 type GameStateM a = State GameState a
 
 initialGameState :: Board -> GameState
-initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive
+initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive 0
 
 eaglePosition :: Position
 eaglePosition = (12, 24)
@@ -302,6 +303,11 @@ randomBoard :: Int -> Int -> Board
 randomBoard n m = Board n m $ Data.Map.fromList (concat [ [ ((i, j), randomField i j) | j <- [0..n-1] ] | i <- [0..m-1]] )
 
 -- GAMESTATE FUNCTIONS --
+
+increasePoints :: Int -> GameStateM ()
+increasePoints x = do
+  gs <- get
+  put $ gs { gPoints = x + gPoints gs }
 
 getTanksByTankPosition :: GameState -> Position -> [Tank]
 getTanksByTankPosition gs pos =

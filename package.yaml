@@ -36,6 +36,7 @@ dependencies:
 - aeson
 - mtl
 - random
+- utility-ht
 
 library:
   source-dirs: src
