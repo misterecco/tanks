@@ -112,8 +112,6 @@ drawGame r t g = do
   drawBonus r t (gBonusItem g)
 
   let scorePos = U.mkRect (30 * tileSize) (2 * tileSize) (8 * tileSize) tileSize
-  liftIO $ print scorePos
-  liftIO $ print (gPoints g)
   setViewport r scorePos
   drawScore r t (gPoints g) 7
 
