@@ -140,42 +140,37 @@ updateFields f = do
     gs <- get
     put $ gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
-updateDestroyBulletsBullets :: Bullet -> Bullet -> [Bullet] -> [Bullet]
-updateDestroyBulletsBullets _ _ [] = return []
-updateDestroyBulletsBullets oldBullet bullet (x:xs) =
-  let update b =
+updateDestroyBulletsBullet :: Bullet -> Bullet -> Bullet -> Maybe Bullet
+updateDestroyBulletsBullet oldBullet bullet b =
     let oldPos = bulletPositions oldBullet in
     let newPos = bulletPositions bullet in
     let posEnemy = bulletPositions b in
     let l1 = List.intersect oldPos posEnemy in
     let l2 = List.intersect newPos posEnemy in
-    if (l1 /= [] && l2 /= []) || (length l2 == 2) then Nothing else Just b
-  in do
-    y <- update x
-    ys <- updateDestroyBulletsBullets bullet xs
-    case y of
-      Nothing -> return ys
-      Just b -> return (b:ys)
+    if (l1 /= [] && l2 /= []) || (List.length l2 == 2) then Nothing else Just b
+
+updateDestroyBulletsBullets :: Bullet -> Bullet -> [Bullet] -> [Bullet]
+updateDestroyBulletsBullets a b xs = Data.Maybe.mapMaybe (updateDestroyBulletsBullet a b) xs
 
 updateDestroyBulletsTank :: Bullet -> Bullet -> Tank -> GameStateM Tank
 updateDestroyBulletsTank oldBullet bullet tank =
   if tPlayer tank == bPlayer bullet
   then return tank
-  else updateBullets tank (updateDestroyBulletsBullets oldBullet bullet (tBullets tank))
+  else return $ updateBullets tank (updateDestroyBulletsBullets oldBullet bullet (tBullets tank))
 
 updateDestroyBulletsTanks :: Bullet -> Bullet -> [Tank] -> GameStateM [Tank]
-updateDestroyBulletsTanks _ [] = return ()
-updateDestroyBulletsTanks oldBullet bullet (x:xs) =
-  y <- updateDestroyBulletsTank oldBullet bullet tank
+updateDestroyBulletsTanks _ _ [] = return []
+updateDestroyBulletsTanks oldBullet bullet (x:xs) = do
+  y <- updateDestroyBulletsTank oldBullet bullet x
   ys <- updateDestroyBulletsTanks oldBullet bullet xs
   return (y:ys)
 
 updateDestroyBullets :: Bullet -> Bullet -> GameStateM Bool
-updateDestroyBullets oldBullet bullet =
+updateDestroyBullets oldBullet bullet = do
   gs <- get;
   tanks <- updateDestroyBulletsTanks oldBullet bullet (gTanks gs)
-  if gTanks gs == tanks return False else do
-    put $ gs { gTanks tanks }
+  if gTanks gs == tanks then return False else do
+    put $ gs { gTanks = tanks }
     return True
 
 checkEagleBullet :: Bullet -> GameStateM ()
