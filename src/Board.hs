@@ -13,6 +13,7 @@ import qualified Data.List as List
 import Data.Map
 import Data.Bits
 import Data.Maybe
+import Control.Monad.State
 import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Generic, Rep)
@@ -88,6 +89,8 @@ data GameState = GameState
   , gGeneralBonuses :: [(GeneralBonus, Int)]
   , gEagle :: Eagle
   } deriving (Generic, Show, FromJSON, ToJSON)
+
+type GameStateM a = State GameState a
 
 initialGameState :: Board -> GameState
 initialGameState board = GameState board [] (Just (Helmet, (2, 2))) [] Alive
@@ -271,9 +274,10 @@ getTanksByTankPosition :: GameState -> Position -> [Tank]
 getTanksByTankPosition gs pos =
 	List.filter (tankOverlap pos) (gTanks gs)
 
-getTanksByBulletPosition :: GameState -> Position -> [Tank]
-getTanksByBulletPosition gs pos =
-	List.filter (tankOverlapBullet pos) (gTanks gs)
+getTanksByBulletPosition :: Position -> GameStateM [Tank]
+getTanksByBulletPosition pos = do
+    gs <- get
+    return $ List.filter (tankOverlapBullet pos) (gTanks gs)
 
 encodeGameState :: GameState -> Data.ByteString.Lazy.ByteString
 encodeGameState gs =  encode $ gs

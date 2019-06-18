@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Action where
 
@@ -11,6 +12,7 @@ import Data.Aeson
 import Data.Maybe
 import Data.Map
 import Data.IORef
+import Control.Monad.State
 import Data.ByteString as BS (ByteString)
 import Data.ByteString.Lazy (ByteString, fromStrict)
 import GHC.Generics (Generic)
@@ -59,16 +61,16 @@ updateMovesMap player gameAction movesMap =
 	f (Just NewPlayer) = Just NewPlayer
 	f (Just _) = Just gameAction
 
-addNewTank :: Player -> GameState -> GameState
-addNewTank pl gs = let
-  oldTanks = gTanks gs
-  newTank = case pl of
-    (Human pid) -> newPlayerTank pid
-    -- TODO: randomness, make sure the field is available
-    (NPC pid) -> newNPCTank pid 0 0
-  in
-    gs {
-      gTanks = (newTank : oldTanks)
+newTankPos :: Player -> Tank
+newTankPos (Human pid) = newPlayerTank pid
+-- TODO: randomness, make sure the field is available
+newTankPos (NPC pid) = newNPCTank pid 0 0
+
+addNewTank :: Player -> GameStateM ()
+addNewTank pl = do
+  gs <- get
+  put $ gs {
+      gTanks = (newTankPos pl : (gTanks gs))
     }
 
 moveField :: GameState -> Dir -> Position -> Position
@@ -79,32 +81,16 @@ moveField gs dir pos =
 	if length fields == 4 && length tanks == 1 && all canEnterField fields then newPos else pos
 
 moveFieldTank :: GameState -> Tank -> Tank
-moveFieldTank gs tank =
-	Tank
-		(tDirection tank)
-		(traceShowId (moveField gs (tDirection tank) (tPosition tank)))
-		(tVelocity tank)
-		(tPlayer tank)
-		(tColor tank)
-		(tSize tank)
-		(tBonuses tank)
-		(tBullets tank)
+moveFieldTank gs tank = tank { tPosition =
+		moveField gs (tDirection tank) (tPosition tank)
+	}
 
 moveTank :: GameState -> Player -> Dir -> [Tank] -> [Tank]
 moveTank _ _ _ [] = []
 moveTank gs pl dir (tank:xs) =
 	if tPlayer tank == pl
-	then (moveFieldTank gs newTank):xs
-	else tank:(moveTank gs pl dir xs)
-	where newTank =
-		Tank dir
-		(tPosition tank)
-		(tVelocity tank)
-		(tPlayer tank)
-		(tColor tank)
-		(tSize tank)
-		(tBonuses tank)
-		(tBullets tank)
+	then moveFieldTank gs (tank { tDirection = dir }) : xs
+	else tank : moveTank gs pl dir xs
 
 bulletVelocity ::Velocity
 bulletVelocity = (4, 0)
@@ -127,88 +113,92 @@ shootTank pl (tank:xs) =
 updateBullets :: Tank -> [Bullet] -> Tank
 updateBullets tank bullets = tank { tBullets = bullets }
 
-updateTanks :: ([Tank] -> [Tank]) -> GameState -> GameState
-updateTanks f gs = gs { gTanks = f $ gTanks gs }
+updateTanks :: ([Tank] -> [Tank]) -> GameStateM ()
+updateTanks f = do
+    gs <- get;
+    put $ gs { gTanks = f $ gTanks gs }
 
 updateFieldsBoard :: (Map Position Field -> Map Position Field) -> Board -> Board
 updateFieldsBoard f (Board n m b) = Board n m (f b)
 
-updateFields :: (Map Position Field -> Map Position Field) -> GameState -> GameState
-updateFields f gs = gs { gBoard = updateFieldsBoard f (gBoard gs) }
+updateFields :: (Map Position Field -> Map Position Field) -> GameStateM ()
+updateFields f = do
+    gs <- get
+    put $ gs { gBoard = updateFieldsBoard f (gBoard gs) }
 
-modifyMoves :: [(Player, GameAction)] -> GameState -> ([(Player, GameAction)], GameState)
-modifyMoves [] gs = ([], gs)
-modifyMoves ((p, action):xs) gs =
-	let (ys, newGs) = modifyMoves xs newGS in ((p, NoAction):ys, newGs)
-	where newGS = case action of
-		NewPlayer -> addNewTank p gs
-		Move d -> updateTanks (moveTank gs p d) gs
-		NoAction -> gs
-		Shoot -> updateTanks (shootTank p) gs
+modifyMove :: Player -> GameAction -> GameStateM ()
+modifyMove p NewPlayer = addNewTank p
+modifyMove p (Move d) = do
+  gs <- get
+  updateTanks $ moveTank gs p d
+modifyMove p NoAction = return ()
+modifyMove p Shoot = updateTanks (shootTank p)
 
-moveBullet :: Bullet -> GameState -> (Maybe Bullet, GameState)
-moveBullet bullet gs =
+modifyMoves :: [(Player, GameAction)] -> GameStateM ()
+modifyMoves [] = return ()
+modifyMoves ((p, action):xs) = do
+  modifyMove p action
+  modifyMoves xs
+
+moveBullet :: Bullet -> GameStateM (Maybe Bullet)
+moveBullet bullet =
 	-- kill tanks
 	let player = bPlayer bullet in
-	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in
-	let maybeField = maybeGetField (gBoard gs) newPos  in
-	let tanks = getTanksByBulletPosition gs newPos in
-	let newGameState = updateTanks (List.filter (\tank ->
+	let newPos = moveByDir (bPosition bullet) 1 (bDirection bullet) in do {
+	tanks <- getTanksByBulletPosition newPos;
+	updateTanks $ List.filter (\tank ->
 		sameTeam player (tPlayer tank) ||
 		not (tankOverlap newPos tank)
-		)) gs
-	in
+		);
 	-- destroy bricks
+	gs <- get;
 	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
-	let lastGameState = updateFields (mapWithKey
-		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty))
-		newGameState
-	in
+	updateFields $ mapWithKey
+		(\k -> \v -> if (isNothing $ List.find (== (k, v)) fields) || v /= Bricks then v else Empty);
+	-- TODO destroy Bullets
+	-- TODO destroy eagle
 	-- move Bullet
+	let fields = getFieldsByBullet (gBoard gs) (bullet {bPosition = newPos}) in
 	if List.filter ((/= bPlayer bullet) . tPlayer) (traceShowId tanks) /= []
 		|| fields /= []
 		|| (isNothing $ maybeGetField (gBoard gs) newPos)
-	then (Nothing, lastGameState)
-	else (Just $ bullet {bPosition = newPos}, lastGameState)
+	then return Nothing
+	else return $ Just $ bullet {bPosition = newPos}
+}
 
-moveBulletsList :: [Bullet] -> GameState -> ([Bullet], GameState)
-moveBulletsList [] gs = ([], gs)
-moveBulletsList (x:xs) gs =
-	let (y, newgs) = moveBullet x gs in
-	let (ys, lastgs) = moveBulletsList xs newgs in
+moveBulletsList :: [Bullet] -> GameStateM [Bullet]
+moveBulletsList [] = return []
+moveBulletsList (x:xs) = do
+	y <- moveBullet x
+	ys <- moveBulletsList xs
 	case y of
-		Just b -> (b:ys, lastgs)
-		Nothing -> (ys, lastgs)
+		Just b -> return $ b:ys
+		Nothing -> return ys
 
-moveBulletsTank :: Tank -> GameState -> (Tank, GameState)
-moveBulletsTank tank gs =
-	let (bullets, newgs) = moveBulletsList (tBullets tank) gs in
-	(updateBullets tank bullets, newgs)
+moveBulletsTank :: Tank -> GameStateM Tank
+moveBulletsTank tank = do
+	bullets <- moveBulletsList (tBullets tank)
+	return $ updateBullets tank bullets
 
-moveBulletsTanks :: GameState -> [Tank] -> ([Tank], GameState)
-moveBulletsTanks gs [] = ([], gs)
-moveBulletsTanks gs (x:xs) =
-	let (y, newgs) = moveBulletsTank x gs in
-	let (ys, lastgs) = moveBulletsTanks newgs xs in
-	(y:ys, lastgs)
+moveBulletsTanks :: [Tank] -> GameStateM [Tank]
+moveBulletsTanks [] = return []
+moveBulletsTanks (x:xs) = do
+	y <- moveBulletsTank x
+	ys <- moveBulletsTanks xs
+	return $ y:ys
 
-moveBullets :: GameState -> GameState
-moveBullets gs =
-	let (tanks, gameState) = moveBulletsTanks gs (gTanks gs)
-	in
-	updateTanks (\gsTanks -> List.filter (\tank ->
+moveBullets :: GameStateM ()
+moveBullets = do
+  gs <- get
+  tanks <- moveBulletsTanks (gTanks gs)
+  updateTanks (\gsTanks -> List.filter (\tank ->
 			isJust $ List.find ((== (tPlayer tank)) . tPlayer) gsTanks)
 		tanks
-	) gameState
+	)
 
-updateGameState :: GameState -> IORef MovesMap -> IO GameState
-updateGameState gs movesMap = do {
-	moves <- readIORef movesMap;
-	let (newMoves, newGameState) = modifyMoves (Data.Map.toList moves) gs in
-	let finalGameState = moveBullets (moveBullets newGameState) in
-	do {
-		writeIORef movesMap (Data.Map.fromList newMoves);
-		return finalGameState;
-	}
-}
+updateGameState :: MovesMap -> GameStateM ()
+updateGameState moves = do
+	modifyMoves (Data.Map.toList moves)
+	moveBullets
+	moveBullets
 
